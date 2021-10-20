@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
+const mongoose = require('mongoose');
 
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
@@ -37,5 +38,28 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+const user = "admin"
+const password = "SW704E21svr!"
+const database = "CryptopinionDB"
+const org = "cryptopinion"
+const uri = `mongodb+srv://${user}:${password}@${org}.djmof.mongodb.net/${database}?retryWrites=true&w=majority`;
+
+mongoose.connect(uri,
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
+
+const db = mongoose.connection;
+db.on("error", console.error.bind(console, "Connection error: "));
+db.once("open", function () {
+  console.log("Connected successfully!");
+});
+
+//Listen on port 3000
+app.listen(3000, () => {
+  console.log("Server is running on port 3000");
+})
 
 module.exports = app;
