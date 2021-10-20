@@ -9,8 +9,11 @@ const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const coinsRouter = require('./routes/coins');
 const testsRouter = require('./routes/test');
+const dataRouter = require('./routes/data')
 
 const app = express();
+
+
 
 
 app.use(logger('dev'));
@@ -23,6 +26,7 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/coins', coinsRouter);
 app.use('/test', testsRouter);
+app.use('/data', dataRouter)
 
 
 // catch 404 and forward to error handler
@@ -59,9 +63,12 @@ db.once("open", function () {
   console.log("Connected successfully!");
 });
 
+
+
 //Listen on port 3000
 app.listen(3001, () => {
   console.log("Server is running on port 3000");
 })
+
 
 module.exports = app;
