@@ -8,6 +8,7 @@ const mongoose = require('mongoose');
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const coinsRouter = require('./routes/coins');
+const testsRouter = require('./routes/test');
 
 const app = express();
 
@@ -20,7 +21,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-app.use('/coins',coinsRouter);
+app.use('/coins', coinsRouter);
+app.use('/test', testsRouter);
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -57,7 +60,7 @@ db.once("open", function () {
 });
 
 //Listen on port 3000
-app.listen(3000, () => {
+app.listen(3001, () => {
   console.log("Server is running on port 3000");
 })
 
