@@ -4,17 +4,48 @@ let Sentiment = require('./models/Sentiment')
 
 
 router.get('/', async function (req, res, next) {
-    /*let date = new Date(Date.now() - 1000 * 60 * 60 * 24); // subtract one day
-    console.log(date)
+    let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
+    let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
     let q = Sentiment.Sentiment.aggregate()
-        .match({timestamp: {$gte: date}})
-
+        .match({timestamp: {$gte: twoday}})
         .group({
             _id: "$coin",
             mostInteractions: {$max: "$interaction"},
-            mentions: {$sum: 1},
-            posSentiment: {$sum: {$cond: [{$gt: ['$sentiment', 0]}, '$sentiment', 0]}},
-            negSentiment: {$sum: {$cond: [{$lt: ['$sentiment', 0]}, '$sentiment', 0]}}
+            mentions:
+                {$sum:
+                    {$cond: [
+                        {$gte: ["$timestamp", oneday]},
+                        1,
+                        0
+                    ]}
+                },
+            posSentiment:
+                {$sum:
+                    {$cond: [
+                        {$gt: ['$sentiment', 0]},
+                        '$sentiment',
+                        0
+                    ]}
+                },
+            negSentiment:
+                {$sum:
+                    {$cond: [
+                        {$lt: ['$sentiment', 0]},
+                        '$sentiment',
+                        0
+                    ]}
+                },
+            yesterdayMentions:
+                {$sum:
+                    {$cond: [
+                        {$and: [
+                            {$gte: ["$timestamp", twoday]},
+                            {$lt: ["$timestamp", oneday]}
+                        ]},
+                        1,
+                        0
+                    ]}
+                }
         })
         .project({_id: 0,
             name: "$_id",
@@ -22,15 +53,35 @@ router.get('/', async function (req, res, next) {
             mentions: 1,
             posSentiment: 1,
             negSentiment: 1,
-            safeNeg: {$cond: [{$eq: ["$negSentiment", 0]}, 1 , {$multiply: ["$negSentiment", -1]}]} }) // hidden value to avoid divide by zero
+            yesterdayMentions: 1,
+            safeYesterday:
+                {$cond: [
+                    {$eq: ["$yesterdayMentions", 0]},
+                    1,
+                    "$yesterdayMentions"
+                ]},
+            safeNeg:
+                {$cond: [
+                    {$eq: ["$negSentiment", 0]},
+                    1 ,
+                    {$multiply: ["$negSentiment", -1]}
+                ]} // hidden value to avoid divide by zero
+        })
         .project({
             name: 1,
             mostInteractions: 1,
             mentions: 1,
             posSentiment: 1,
             negSentiment: 1,
-            relSentiment: {$divide: ["$posSentiment","$safeNeg"]}})
-        .sort("mentions")
+            relSentiment: {$divide: ["$posSentiment","$safeNeg"]},
+            relMentions:
+                {$multiply: [
+                    {$divide: ["$mentions", "$safeYesterday"]},
+                    100
+                ]},
+            mostInfluence: {$sum: 1}
+        })
+        .sort({mentions: "desc"})
         .limit(25);
 
     await q.exec(function (err, result) {
@@ -39,9 +90,7 @@ router.get('/', async function (req, res, next) {
         } else{
             res.send(result);
         }
-    });*/
-    res.send("Your requested some coins")
-
+    });
 });
 
 router.get('/:name', async function (req, res, next) {
