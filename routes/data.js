@@ -7,7 +7,7 @@ let spawn = require('child_process').spawn;
 
 router.post('/', function (req, res) {
     console.log( req.body)
-    const ls = spawn('python', [script.pythonPath + 'src/add_to_queue.py', JSON.stringify(req.body)])
+    const ls = spawn('python3', [script.pythonPath + 'src/add_to_queue.py', JSON.stringify(req.body)])
     ls.stdout.on('data', (data) => {
         console.log(`stdout: ${data}`);
     });
