@@ -71,5 +71,6 @@ app.listen(3001, () => {
   console.log("Server is running on port 3000");
 })
 
-
+var dir = __dirname;
+module.exports.pythonPath = dir.substr(0, dir.length -'web-backend/'.length) + "\\server-backend\\"
 module.exports = app;
