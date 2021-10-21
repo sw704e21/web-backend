@@ -4,7 +4,7 @@ let Sentiment = require('./models/Sentiment')
 
 
 router.get('/', async function (req, res, next) {
-    let date = new Date(Date.now() - 1000 * 60 * 60 * 24); // subtract one day
+    /*let date = new Date(Date.now() - 1000 * 60 * 60 * 24); // subtract one day
     console.log(date)
     let q = Sentiment.Sentiment.aggregate()
         .match({timestamp: {$gte: date}})
@@ -39,7 +39,8 @@ router.get('/', async function (req, res, next) {
         } else{
             res.send(result);
         }
-    });
+    });*/
+    res.send("Your requested some coins")
 
 });
 
