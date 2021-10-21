@@ -21,8 +21,15 @@ router.get('/', async function (req, res, next) {
             mostInteractions: 1,
             mentions: 1,
             posSentiment: 1,
-            negSentiment: {$multiply: ["$negSentiment", -1]},
-            relSentiment: {$divide: ["$posSentiment","$negSentiment"]}})
+            negSentiment: 1,
+            safeNeg: {$cond: [{$eq: ["$negSentiment", 0]}, 1 , {$multiply: ["$negSentiment", -1]}]} }) // hidden value to avoid divide by zero
+        .project({
+            name: 1,
+            mostInteractions: 1,
+            mentions: 1,
+            posSentiment: 1,
+            negSentiment: 1,
+            relSentiment: {$divide: ["$posSentiment","$safeNeg"]}})
         .sort("mentions")
         .limit(25);
 
