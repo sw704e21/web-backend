@@ -12,6 +12,7 @@ const coinsRouter = require('./routes/coins');
 const testsRouter = require('./routes/test');
 const dataRouter = require('./routes/data');
 
+
 const app = express();
 
 
@@ -73,4 +74,14 @@ app.listen(3001, () => {
 
 var dir = __dirname;
 module.exports.pythonPath = dir.substr(0, dir.length -'web-backend/'.length) + "/server-backend/"
+
+const corsOptions = {
+    origin: "*",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+}
+
+module.exports.corsOptions = corsOptions;
+
 module.exports = app;
