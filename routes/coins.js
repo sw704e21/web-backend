@@ -95,7 +95,7 @@ router.get('/',cors(corsOptions) , async function (req, res, next) {
     });
 });
 
-router.get('/:name', async function (req, res, next) {
+router.get('/:name', cors(corsOptions), async function (req, res, next) {
     let q = Sentiment.Sentiment.find({coin: req.params['name']});
     await q.exec(function (err, result) {
         if (err) {
@@ -112,7 +112,7 @@ router.get('/:name', async function (req, res, next) {
     })
 });
 
-router.post('/', async function (req, res) {
+router.post('/', cors(corsOptions), async function (req, res) {
     const body = req.body
     await Sentiment.Sentiment.create(body, function (err, obj, next) {
         if (err) {
