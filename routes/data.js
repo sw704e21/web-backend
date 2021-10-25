@@ -1,7 +1,9 @@
 let express = require('express');
 let router = express.Router();
 let script = require('../app')
-const {corsOptions} = require("../app");
+let corsOptions = require('../app').corsOptions
+let cors = require('cors')
+
 
 let spawn = require('child_process').spawn;
 //const script = 'C:\\Users\\Bruger\\PycharmProjects\\server-backend\\src\\'
