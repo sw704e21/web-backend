@@ -14,6 +14,7 @@ router.get('/',cors(app.corsOptions) , async function (req, res, next) {
         .match({timestamp: {$gte: twoday}})
         .group({
             _id: "$coin",
+            identifier: {$max: "$identifier"},
             mostInteractions: {$max: "$interaction"},
             mentions:
                 {$sum:
@@ -53,6 +54,7 @@ router.get('/',cors(app.corsOptions) , async function (req, res, next) {
         })
         .project({_id: 0,
             name: "$_id",
+            identifier: 1,
             mostInteractions: 1,
             mentions: 1,
             posSentiment: 1,
@@ -73,6 +75,7 @@ router.get('/',cors(app.corsOptions) , async function (req, res, next) {
         })
         .project({
             name: 1,
+            identifier: 1,
             mostInteractions: 1,
             mentions: 1,
             posSentiment: 1,
@@ -99,14 +102,33 @@ router.get('/',cors(app.corsOptions) , async function (req, res, next) {
 
 router.post('/', cors(app.corsOptions), async function (req, res) {
     let body = req.body
-    await Sentiment.Sentiment.create(body, function (err, obj, next) {
+    const name = body['coin'];
+    let q = Coin.Coin.find({name: name});
+    await q.exec(async function (err, result, next) {
         if (err) {
-            next(err)
+            next(err);
         } else {
-            res.status(201)
-            res.send(obj)
+            if (result.length === 0) {
+                res.status(404);
+                res.send('Not tracking coin with name ' + name);
+            } else if (result.length > 1) {
+                res.status(409);
+                res.send('Multiple coins with name ' + name);
+            } else {
+                body['identifier'] = result[0]['identifier']
+                await Sentiment.Sentiment.create(body, function (err, obj, next) {
+                    if (err) {
+                        next(err)
+                    } else {
+                        res.status(201)
+                        res.send(obj)
+                    }
+                })
+            }
         }
-    })
+    });
+
+
 })
 
 
