@@ -11,7 +11,7 @@ const usersRouter = require('./routes/users');
 const coinsRouter = require('./routes/coins');
 const testsRouter = require('./routes/test');
 const dataRouter = require('./routes/data');
-
+const trackRouter = require('./routes/track')
 
 const app = express();
 
@@ -29,6 +29,7 @@ app.use('/users', usersRouter);
 app.use('/coins', coinsRouter);
 app.use('/test', testsRouter);
 app.use('/data', dataRouter);
+app.use('/track', trackRouter)
 
 
 // catch 404 and forward to error handler

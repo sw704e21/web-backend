@@ -4,7 +4,6 @@ let Sentiment = require('../models/Sentiment')
 let Coin = require('../models/Coin')
 let app = require('../app')
 let cors = require('cors')
-const {spawn} = require("child_process");
 
 
 router.get('/',cors(app.corsOptions) , async function (req, res, next) {
@@ -100,6 +99,25 @@ router.get('/',cors(app.corsOptions) , async function (req, res, next) {
     });
 });
 
+router.get('/:name', cors(app.corsOptions), async function (req, res, next) {
+    let q = Sentiment.Sentiment.find({coin: req.params['name']});
+    await q.exec(function (err, result) {
+        if (err) {
+            next(err);
+        }
+        else {
+            if (result.length === 0) {
+                res.status(404)
+                res.send( `${req.params['name']} not found!`)
+            }
+            else {
+                res.statusCode = 200
+                res.send(result)
+            }
+        }
+    })
+});
+
 router.post('/', cors(app.corsOptions), async function (req, res) {
     let body = req.body
     const name = body['coin'];
@@ -127,69 +145,7 @@ router.post('/', cors(app.corsOptions), async function (req, res) {
             }
         }
     });
-
-
 })
 
-
-router.get('/:name', cors(app.corsOptions), async function (req, res, next) {
-    let q = Sentiment.Sentiment.find({coin: req.params['name']});
-    await q.exec(function (err, result) {
-        if (err) {
-            next(err);
-        }
-        else {
-            if (result.length === 0) {
-                res.status(404)
-                res.send( `${req.params['name']} not found!`)
-            }
-            res.statusCode = 200
-            res.send(result)
-        }
-    })
-});
-
-
-
-router.post('/track/:name-:ident', cors(app.corsOptions), async function(req, res, next){
-   let name = req.params['name'].toLowerCase();
-   let identifier = req.params['ident'].toUpperCase();
-   let q = Coin.Coin.find({$or: [{name: name}, {identifier: identifier}]});
-   await q.exec(async function (err, result) {
-       if (err) {
-           res.status(500)
-           next()
-       } else {
-           if (result.length !== 0) {
-               res.status(409)
-               next("Already tracking a coin with given name or identifier:" + result)
-
-           } else {
-               await Coin.Coin.create({name: name, identifier: identifier}, function (err, obj, next) {
-                   if (err) {
-                       next(err);
-                   } else {
-                       const ls = spawn('python3', [app.crawlerPath + 'src/add_subreddit.py', JSON.stringify(name)])
-                       ls.stdout.on('data', (data) => {
-                           console.log(`stdout: ${data}`);
-                       });
-
-                       ls.stderr.on('data', (data) => {
-                           console.log(`stderr: ${data}`);
-                       });
-
-                       ls.on('close', (code) =>{
-                           console.log(`child proccess exited with code ${code}`)
-                       })
-                       // Start script in crawler
-                       res.status(201)
-                       res.send(obj)
-                   }
-               })
-           }
-       }
-   });
-
-});
 
 module.exports = router;
