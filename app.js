@@ -73,7 +73,8 @@ app.listen(3001, () => {
 })
 
 var dir = __dirname;
-module.exports.pythonPath = dir.substr(0, dir.length -'web-backend/'.length) + "/server-backend/"
+module.exports.serverPath = dir.substr(0, dir.length -'web-backend/'.length) + "/server-backend/"
+module.exports.crawlerPath = dir.substr(0, dir.length -'web-backend/'.length) + "/crawler/"
 
 const corsOptions = {
     origin: "*",
