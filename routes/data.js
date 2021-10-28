@@ -1,16 +1,15 @@
 let express = require('express');
 let router = express.Router();
-let script = require('../app')
-let corsOptions = require('../app').corsOptions
+let app = require('../app')
 let cors = require('cors')
 
 
 let spawn = require('child_process').spawn;
 //const script = 'C:\\Users\\Bruger\\PycharmProjects\\server-backend\\src\\'
 
-router.post('/', cors(corsOptions), function (req, res) {
+router.post('/', cors(app.corsOptions), function (req, res) {
     console.log( req.body)
-    const ls = spawn('python3', [script.pythonPath + 'src/add_to_queue.py', JSON.stringify(req.body)])
+    const ls = spawn('python3', [app.serverPath + 'src/add_to_queue.py', JSON.stringify(req.body)])
     ls.stdout.on('data', (data) => {
         console.log(`stdout: ${data}`);
     });
