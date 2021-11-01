@@ -1,9 +1,9 @@
 let express = require('express');
 let router = express.Router();
-let Sentiment = require('../models/Sentiment')
-let Coin = require('../models/Coin')
-let app = require('../app')
-let cors = require('cors')
+let Sentiment = require('../models/Sentiment');
+let Coin = require('../models/Coin');
+let app = require('../app');
+let cors = require('cors');
 
 
 router.get('/',cors(app.corsOptions) , async function (req, res, next) {
@@ -134,14 +134,26 @@ router.post('/', cors(app.corsOptions), async function (req, res) {
                 res.send('Multiple coins with name ' + name);
             } else {
                 body['identifier'] = result[0]['identifier']
-                await Sentiment.Sentiment.create(body, function (err, obj, next) {
+                let e = Sentiment.Sentiment.find({url: body['url']});
+                await e.exec(async function (err, result) {
                     if (err) {
-                        next(err)
+                        next(err);
                     } else {
-                        res.status(201)
-                        res.send(obj)
+                        if (result.length > 0) {
+                            res.status(403);
+                            res.send("Post with url already exists: " + body['url']);
+                        } else {
+                            await Sentiment.Sentiment.create(body, function (err, obj, next) {
+                                if (err) {
+                                    next(err);
+                                } else {
+                                    res.status(201);
+                                    res.send(obj);
+                                }
+                            })
+                        }
                     }
-                })
+                });
             }
         }
     });
