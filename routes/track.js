@@ -60,6 +60,28 @@ router.post('/:name-:ident', cors(app.corsOptions), async function(req, res, nex
     });
 });
 
+router.delete('/:id', cors(corsOptions), async function (req, res, next) {
+    const id = req.params['id'];
+    let q = Coin.Coin.find({_id: id});
+    await q.exec(async function (err, result) {
+        if (err) {
+            next(err);
+        } else {
+            if (result.length === 0) {
+                res.status(404);
+                res.send('Coin with id ' + id + ' not found!');
+            } else if (result.length > 1) {
+                res.status(500);
+                next();
+            } else {
+                let del = await Coin.Coin.remove({_id: id}).exec()
+                res.status(204);
+                res.send('Successfully deleted ' + del.deletedCount + " objects");
+            }
+        }
+    });
+})
+
 
 
 module.exports = router;
