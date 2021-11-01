@@ -122,6 +122,7 @@ router.post('/', cors(app.corsOptions), async function (req, res) {
     let body = req.body
     const name = body['coin'];
     let q = Coin.Coin.find({name: name});
+    console.log(body);
     await q.exec(async function (err, result, next) {
         if (err) {
             next(err);
