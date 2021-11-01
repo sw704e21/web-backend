@@ -5,7 +5,8 @@ const sentimentSchema = new mongoose.Schema({
     coin: {type: String},
     sentiment: {type: Number, default: 0},
     interaction: {type: Number, default: 1},
-    url: {type: String, default: ''}
+    url: {type: String, default: ''},
+    identifier: {type: String}
 });
 
 module.exports.Sentiment = mongoose.model('Sentiment', sentimentSchema);

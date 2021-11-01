@@ -1,17 +1,19 @@
 let express = require('express');
 let router = express.Router();
-let Sentiment = require('./models/Sentiment')
-let corsOptions = require('../app').corsOptions
+let Sentiment = require('../models/Sentiment')
+let Coin = require('../models/Coin')
+let app = require('../app')
 let cors = require('cors')
 
 
-router.get('/',cors(corsOptions) , async function (req, res, next) {
+router.get('/',cors(app.corsOptions) , async function (req, res, next) {
     let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
     let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
     let q = Sentiment.Sentiment.aggregate()
         .match({timestamp: {$gte: twoday}})
         .group({
             _id: "$coin",
+            identifier: {$max: "$identifier"},
             mostInteractions: {$max: "$interaction"},
             mentions:
                 {$sum:
@@ -51,6 +53,7 @@ router.get('/',cors(corsOptions) , async function (req, res, next) {
         })
         .project({_id: 0,
             name: "$_id",
+            identifier: 1,
             mostInteractions: 1,
             mentions: 1,
             posSentiment: 1,
@@ -71,6 +74,7 @@ router.get('/',cors(corsOptions) , async function (req, res, next) {
         })
         .project({
             name: 1,
+            identifier: 1,
             mostInteractions: 1,
             mentions: 1,
             posSentiment: 1,
@@ -95,7 +99,7 @@ router.get('/',cors(corsOptions) , async function (req, res, next) {
     });
 });
 
-router.get('/:name', cors(corsOptions), async function (req, res, next) {
+router.get('/:name', cors(app.corsOptions), async function (req, res, next) {
     let q = Sentiment.Sentiment.find({coin: req.params['name']});
     await q.exec(function (err, result) {
         if (err) {
@@ -106,22 +110,42 @@ router.get('/:name', cors(corsOptions), async function (req, res, next) {
                 res.status(404)
                 res.send( `${req.params['name']} not found!`)
             }
-            res.statusCode = 200
-            res.send(result)
+            else {
+                res.statusCode = 200
+                res.send(result)
+            }
         }
     })
 });
 
-router.post('/', cors(corsOptions), async function (req, res) {
-    const body = req.body
-    await Sentiment.Sentiment.create(body, function (err, obj, next) {
+router.post('/', cors(app.corsOptions), async function (req, res) {
+    let body = req.body
+    const name = body['coin'];
+    let q = Coin.Coin.find({name: name});
+    await q.exec(async function (err, result, next) {
         if (err) {
-            next(err)
+            next(err);
         } else {
-            res.status(201)
-            res.send(obj)
+            if (result.length === 0) {
+                res.status(404);
+                res.send('Not tracking coin with name ' + name);
+            } else if (result.length > 1) {
+                res.status(409);
+                res.send('Multiple coins with name ' + name);
+            } else {
+                body['identifier'] = result[0]['identifier']
+                await Sentiment.Sentiment.create(body, function (err, obj, next) {
+                    if (err) {
+                        next(err)
+                    } else {
+                        res.status(201)
+                        res.send(obj)
+                    }
+                })
+            }
         }
-    })
+    });
 })
+
 
 module.exports = router;
