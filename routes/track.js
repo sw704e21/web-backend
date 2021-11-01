@@ -1,12 +1,11 @@
 let express = require('express');
 let router = express.Router();
 const cors = require("cors");
-const {corsOptions} = require("../app");
 const Coin = require("../models/Coin");
 const app = require("../app");
 const {spawn} = require("child_process");
 
-router.get('/', cors(corsOptions), async function (req, res, next) {
+router.get('/', cors(app.corsOptions), async function (req, res, next) {
     let q = Coin.Coin.find({});
     await q.exec(function (err, result){
         if(err){
@@ -60,7 +59,7 @@ router.post('/:name-:ident', cors(app.corsOptions), async function(req, res, nex
     });
 });
 
-router.delete('/:id', cors(corsOptions), async function (req, res, next) {
+router.delete('/:id', cors(app.corsOptions), async function (req, res, next) {
     const id = req.params['id'];
     let q = Coin.Coin.find({_id: id});
     await q.exec(async function (err, result) {
