@@ -6,7 +6,7 @@ let app = require('../app');
 let cors = require('cors');
 
 
-router.get('/',cors(app.corsOptions) , async function (req, res, next) {
+router.get('/:length?',cors(app.corsOptions) , async function (req, res, next) {
     let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
     let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
     let q = Sentiment.Sentiment.aggregate()
@@ -87,8 +87,8 @@ router.get('/',cors(app.corsOptions) , async function (req, res, next) {
                 ]},
             mostInfluence: {$sum: 1}
         })
-        .sort({mentions: "desc"})
-        .limit(25);
+        .sort({relMentions: "desc"})
+        .limit(parseInt(req.query.length) || 25);
 
     await q.exec(function (err, result) {
         if (err) {
