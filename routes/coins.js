@@ -87,7 +87,7 @@ router.get('/:length?',cors(app.corsOptions) , async function (req, res, next) {
                 ]},
             mostInfluence: {$sum: 1}
         })
-        .sort({relMentions: "desc"})
+        .sort({mentions: "desc"})
         .limit(parseInt(req.query.length) || 25);
 
     await q.exec(function (err, result) {
