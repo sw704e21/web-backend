@@ -100,7 +100,7 @@ router.get('/all/:length?',cors(app.corsOptions) , async function (req, res, nex
 });
 
 router.get('/:name/:age?', cors(app.corsOptions), async function (req, res, next) {
-    let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * req.query.age); 
+    let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * (req.query.age || 7)); 
     let q = Sentiment.Sentiment.find({coin: req.params['name'], timestamp: {$gte: date}});
     await q.exec(function (err, result) {
         if (err) {
