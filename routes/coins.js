@@ -6,7 +6,7 @@ let app = require('../app');
 let cors = require('cors');
 
 
-router.get('/:length?',cors(app.corsOptions) , async function (req, res, next) {
+router.get('/all/:length?',cors(app.corsOptions) , async function (req, res, next) {
     let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
     let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
     let q = Sentiment.Sentiment.aggregate()
