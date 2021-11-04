@@ -6,7 +6,7 @@ let app = require('../app');
 let cors = require('cors');
 
 
-router.get('/:length?:sortParam?',cors(app.corsOptions) , async function (req, res, next) {
+router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (req, res, next) {
     let sortParam = req.query.sortParam; // put a minus in front if sort by descending
     let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
     let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
@@ -79,7 +79,7 @@ router.get('/:length?:sortParam?',cors(app.corsOptions) , async function (req, r
             mostInteractions: 1,
             mentions: 1,
             posSentiment: 1,
-            negSentiment: 1,
+            negSentiment: {$abs: '$negSentiment'},
             relSentiment: {$divide: ["$posSentiment","$safeNeg"]},
             relMentions:
                 {$multiply: [
@@ -100,8 +100,9 @@ router.get('/:length?:sortParam?',cors(app.corsOptions) , async function (req, r
     });
 });
 
-router.get('/:name', cors(app.corsOptions), async function (req, res, next) {
-    let q = Sentiment.Sentiment.find({coin: req.params['name']});
+router.get('/:name/:age?', cors(app.corsOptions), async function (req, res, next) {
+    let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * (req.query.age || 7)); 
+    let q = Sentiment.Sentiment.find({coin: req.params['name'], timestamp: {$gte: date}});
     await q.exec(function (err, result) {
         if (err) {
             next(err);
