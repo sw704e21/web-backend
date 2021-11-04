@@ -78,7 +78,7 @@ router.get('/all/:length?',cors(app.corsOptions) , async function (req, res, nex
             mostInteractions: 1,
             mentions: 1,
             posSentiment: 1,
-            negSentiment: 1,
+            negSentiment: {$abs: '$negSentiment'},
             relSentiment: {$divide: ["$posSentiment","$safeNeg"]},
             relMentions:
                 {$multiply: [
