@@ -120,6 +120,22 @@ router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res
     })
 });
 
+router.patch('/:url?:interactions?', cors(app.corsOptions), async function (req, res, next) {
+   let result = await Sentiment.Sentiment.updateOne({url: req.query.url}, {interaction: req.query.interactions});
+   if(result.matchedCount === 0){
+       res.status(404)
+       res.send(`${req.query.url} not found!`)
+   }
+   else if(result.matchedCount < 1){
+       res.status(200)
+       res.send(`${result.matchedCount} documents found, updated only one.`)
+   }
+   else {
+       res.status(200)
+       res.send(`Sentiment of post ${req.query.url} updated to ${req.query.interactions}`)
+   }
+});
+
 router.post('/', cors(app.corsOptions), async function (req, res) {
     let body = req.body
     const name = body['coin'];
