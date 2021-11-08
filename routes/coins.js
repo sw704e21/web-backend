@@ -99,9 +99,9 @@ router.get('/all/:length?',cors(app.corsOptions) , async function (req, res, nex
     });
 });
 
-router.get('/:name/:age?', cors(app.corsOptions), async function (req, res, next) {
+router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res, next) {
     let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * (req.query.age || 7)); 
-    let q = Sentiment.Sentiment.find({coin: req.params['name'], timestamp: {$gte: date}});
+    let q = Sentiment.Sentiment.find({identifier: req.params['identifier'], timestamp: {$gte: date}});
     await q.exec(function (err, result) {
         if (err) {
             next(err);
@@ -109,7 +109,7 @@ router.get('/:name/:age?', cors(app.corsOptions), async function (req, res, next
         else {
             if (result.length === 0) {
                 res.status(404)
-                res.send( `${req.params['name']} not found!`)
+                res.send( `${req.params['identifier']} not found!`)
             }
             else {
                 res.statusCode = 200
