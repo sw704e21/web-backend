@@ -131,8 +131,15 @@ router.patch('/:url?:interactions?', cors(app.corsOptions), async function (req,
        res.send(`${result.matchedCount} documents found, updated only one.`)
    }
    else {
-       res.status(200)
-       res.send(`Sentiment of post ${req.query.url} updated to ${req.query.interactions}`)
+       if(result.acknowledged){
+           res.status(200)
+           res.send(`Sentiment of post ${req.query.url} updated to ${req.query.interactions}`)
+       }
+       else{
+           res.status(500)
+           res.send("An unknown database error occurred")
+       }
+
    }
 });
 
