@@ -58,32 +58,38 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
             mostInteractions: 1,
             mentions: 1,
             posSentiment: 1,
-            negSentiment: 1,
-            yesterdayMentions: 1,
-            safeYesterday:
-                {$cond: [
-                    {$eq: ["$yesterdayMentions", 0]},
-                    1,
-                    "$yesterdayMentions"
-                ]},
-            safeNeg:
-                {$cond: [
-                    {$eq: ["$negSentiment", 0]},
-                    1 ,
-                    {$multiply: ["$negSentiment", -1]}
-                ]} // hidden value to avoid divide by zero
-        })
-        .project({
-            name: 1,
-            identifier: 1,
-            mostInteractions: 1,
-            mentions: 1,
-            posSentiment: 1,
             negSentiment: {$abs: '$negSentiment'},
-            relSentiment: {$divide: ["$posSentiment","$safeNeg"]},
+            relSentiment: {
+                $divide: [
+                    {$subtract: [
+                        "$posSentiment",
+                        "$negSentiment"
+                    ]},
+                    {$cond: [
+                        {$eq: [
+                            "$negSentiment",
+                            0
+                        ]},
+                        1,
+                        "$negSentiment"
+                    ]}
+                ]},
             relMentions:
                 {$multiply: [
-                    {$divide: ["$mentions", "$safeYesterday"]},
+                    {$divide: [
+                        {$subtract: [
+                            "$mentions",
+                            "$yesterdayMentions"
+                        ]},
+                        {$cond: [
+                            {$eq: [
+                                "$yesterdayMentions",
+                                0
+                            ]},
+                            1,
+                            "$yesterdayMentions"
+                        ]}
+                    ]},
                     100
                 ]},
             mostInfluence: {$sum: 1}
@@ -112,8 +118,7 @@ router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res
             "interaction": {$sum: "$interaction"},
             "sentiment": {$sum: "$sentiment"},
             "negSentiment": {$sum: {$cond: [{$lt: ['$sentiment', 0]}, '$sentiment', 0]}},
-            "posSentiment": {$sum: {$cond: [{$gt: ['$sentiment', 0]}, '$sentiment', 0]}},
-            "timestamp": {$min: "$timestamp"}
+            "posSentiment": {$sum: {$cond: [{$gt: ['$sentiment', 0]}, '$sentiment', 0]}}
             }
         )
         .project({
@@ -123,8 +128,7 @@ router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res
             interaction: 1,
             sentiment: 1,
             negSentiment: {$abs: "$negSentiment"},
-            posSentiment: 1,
-            timestamp: 1
+            posSentiment: 1
         })
         .sort("time")
     await q.exec(function (err, result) {
