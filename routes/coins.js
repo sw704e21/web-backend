@@ -101,8 +101,30 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
 });
 
 router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res, next) {
-    let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * (req.query.age || 7)); 
-    let q = Sentiment.Sentiment.find({identifier: req.params['identifier'], timestamp: {$gte: date}});
+    let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * (req.query.age || 7));
+    let now = new Date(Date.now());
+
+    let q = Sentiment.Sentiment.aggregate()
+        .match({identifier: req.params['identifier'], timestamp: {$gte: date}})
+        .group({
+            "_id": {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60 ]}},
+            "mentions": {$sum: 1},
+            "interaction": {$sum: "$interaction"},
+            "sentiment": {$sum: "$sentiment"},
+            "negSentiment": {$sum: {$cond: [{$lt: ['$sentiment', 0]}, '$sentiment', 0]}},
+            "posSentiment": {$sum: {$cond: [{$gt: ['$sentiment', 0]}, '$sentiment', 0]}
+            }
+        })
+        .project({
+            _id: 0,
+            time: "$_id",
+            mentions: 1,
+            interaction: 1,
+            sentiment: 1,
+            negSentiment: {$abs: "$negSentiment"},
+            posSentiment: 1
+        })
+        .sort("time")
     await q.exec(function (err, result) {
         if (err) {
             next(err);
