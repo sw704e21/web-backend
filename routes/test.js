@@ -2,15 +2,18 @@ var express = require('express');
 var router = express.Router();
 let script = require('../app')
 const {spawn} = require("child_process");
+let app = require('../app');
+let cors = require('cors');
+const {Sentiment} = require("../models/Sentiment");
 
 
-router.get('/date', function (req, res) {
+router.get('/date', cors(app.corsOptions), function (req, res) {
     let a = new Date(Date.now())
     a.setDate(a.getDate() - 1)
     res.send(JSON.stringify({"date": Date.now()}))
 })
 
-router.get('/path', function (req, res) {
+router.get('/path', cors(app.corsOptions), function (req, res) {
     const ls = spawn('python', [script.pythonPath + 'test.py', JSON.stringify(req.body)])
     var result = ""
     ls.stdout.on('data', (data) => {
@@ -29,5 +32,11 @@ router.get('/path', function (req, res) {
     })
     res.send(result)
 })
+
+router.delete('/:coin', cors(app.corsOptions),async function (req, res, next) {
+    let delres = await Sentiment.remove({coin: req.params['coin']}).exec();
+    res.status(204);
+    res.send('Successfully deleted objects:' + delres.deletedCount);
+});
 
 module.exports = router;
