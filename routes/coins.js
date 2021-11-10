@@ -112,9 +112,10 @@ router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res
             "interaction": {$sum: "$interaction"},
             "sentiment": {$sum: "$sentiment"},
             "negSentiment": {$sum: {$cond: [{$lt: ['$sentiment', 0]}, '$sentiment', 0]}},
-            "posSentiment": {$sum: {$cond: [{$gt: ['$sentiment', 0]}, '$sentiment', 0]}
+            "posSentiment": {$sum: {$cond: [{$gt: ['$sentiment', 0]}, '$sentiment', 0]}},
+            "timestamp": {$min: "$timestamp"}
             }
-        })
+        )
         .project({
             _id: 0,
             time: "$_id",
@@ -122,7 +123,8 @@ router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res
             interaction: 1,
             sentiment: 1,
             negSentiment: {$abs: "$negSentiment"},
-            posSentiment: 1
+            posSentiment: 1,
+            timestamp: 1
         })
         .sort("time")
     await q.exec(function (err, result) {
