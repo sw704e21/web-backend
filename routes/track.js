@@ -37,7 +37,7 @@ router.post('/:name-:ident', cors(app.corsOptions), async function(req, res, nex
                     if (err) {
                         next(err);
                     } else {
-                        const ls = spawn('python3', [app.crawlerPath + 'src/add_subreddit.py', JSON.stringify(name)])
+                        const ls = spawn('python3', [app.crawlerPath + 'src/add_subreddit.py', name])
                         ls.stdout.on('data', (data) => {
                             console.log(`stdout: ${data}`);
                         });
