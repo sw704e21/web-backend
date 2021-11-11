@@ -58,32 +58,38 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
             mostInteractions: 1,
             mentions: 1,
             posSentiment: 1,
-            negSentiment: 1,
-            yesterdayMentions: 1,
-            safeYesterday:
-                {$cond: [
-                    {$eq: ["$yesterdayMentions", 0]},
-                    1,
-                    "$yesterdayMentions"
-                ]},
-            safeNeg:
-                {$cond: [
-                    {$eq: ["$negSentiment", 0]},
-                    1 ,
-                    {$multiply: ["$negSentiment", -1]}
-                ]} // hidden value to avoid divide by zero
-        })
-        .project({
-            name: 1,
-            identifier: 1,
-            mostInteractions: 1,
-            mentions: 1,
-            posSentiment: 1,
             negSentiment: {$abs: '$negSentiment'},
-            relSentiment: {$divide: ["$posSentiment","$safeNeg"]},
+            relSentiment: {
+                $divide: [
+                    {$subtract: [
+                        "$posSentiment",
+                            {$abs: "$negSentiment"}
+                    ]},
+                    {$cond: [
+                        {$eq: [
+                            "$negSentiment",
+                            0
+                        ]},
+                        1,
+                        {$abs: "$negSentiment"}
+                    ]}
+                ]},
             relMentions:
                 {$multiply: [
-                    {$divide: ["$mentions", "$safeYesterday"]},
+                    {$divide: [
+                        {$subtract: [
+                            "$mentions",
+                            "$yesterdayMentions"
+                        ]},
+                        {$cond: [
+                            {$eq: [
+                                "$yesterdayMentions",
+                                0
+                            ]},
+                            1,
+                            "$yesterdayMentions"
+                        ]}
+                    ]},
                     100
                 ]},
             mostInfluence: {$sum: 1}
@@ -112,9 +118,9 @@ router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res
             "interaction": {$sum: "$interaction"},
             "sentiment": {$sum: "$sentiment"},
             "negSentiment": {$sum: {$cond: [{$lt: ['$sentiment', 0]}, '$sentiment', 0]}},
-            "posSentiment": {$sum: {$cond: [{$gt: ['$sentiment', 0]}, '$sentiment', 0]}
+            "posSentiment": {$sum: {$cond: [{$gt: ['$sentiment', 0]}, '$sentiment', 0]}}
             }
-        })
+        )
         .project({
             _id: 0,
             time: "$_id",
@@ -143,26 +149,33 @@ router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res
 });
 
 router.patch('/:url?:interactions?', cors(app.corsOptions), async function (req, res, next) {
-   let result = await Sentiment.Sentiment.updateOne({url: req.query.url}, {interaction: req.query.interactions});
-   if(result.matchedCount === 0){
-       res.status(404)
-       res.send(`${req.query.url} not found!`)
-   }
-   else if(result.matchedCount < 1){
-       res.status(200)
-       res.send(`${result.matchedCount} documents found, updated only one.`)
-   }
-   else {
-       if(result.acknowledged){
-           res.status(200)
-           res.send(`Sentiment of post ${req.query.url} updated to ${req.query.interactions}`)
-       }
-       else{
-           res.status(500)
-           res.send("An unknown database error occurred")
-       }
+   let q = Sentiment.Sentiment.updateOne({url: req.query.url}, {interaction: req.query.interactions});
+   await q.exec(function(err, result) {
+       if (err) {
+           next(err);
+       }else{
+           if(result.matchedCount === 0){
+               res.status(404)
+               res.send(`${req.query.url} not found!`)
+           }
+           else if(result.matchedCount < 1){
+               res.status(200)
+               res.send(`${result.matchedCount} documents found, updated only one.`)
+           }
+           else {
+               if(result.acknowledged){
+                   res.status(200)
+                   res.send(`Sentiment of post ${req.query.url} updated to ${req.query.interactions}`)
+               }
+               else{
+                   res.status(500)
+                   res.send("An unknown database error occurred")
+               }
 
-   }
+           }
+       }
+   })
+
 });
 
 router.post('/', cors(app.corsOptions), async function (req, res) {

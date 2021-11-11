@@ -34,9 +34,28 @@ router.get('/path', cors(app.corsOptions), function (req, res) {
 })
 
 router.delete('/:coin', cors(app.corsOptions),async function (req, res, next) {
-    let delres = await Sentiment.remove({coin: req.params['coin']}).exec();
-    res.status(204);
-    res.send('Successfully deleted objects:' + delres.deletedCount);
+    await Sentiment.remove({coin: req.params['coin']}).exec(function(err, delres) {
+        if(err) {
+            next(err);
+        } else {
+            res.status(204);
+            res.send('Successfully deleted objects:' + delres.deletedCount);
+        }
+    });
+
+});
+
+router.get('/posts', cors(app.corsOptions), async function (req, res, next) {
+    let q = Sentiment.find();
+    await q.exec(function (err, result) {
+        if (err) {
+            next(err);
+        }
+        else {
+            res.status(200);
+            res.send(result);
+        }
+    })
 });
 
 module.exports = router;
