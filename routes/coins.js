@@ -97,11 +97,25 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
         .sort(sortParam || "-mentions")
         .limit(parseInt(req.query.length) || 25)
 
-    await q.exec(function (err, result) {
+    // Add display names
+    await q.exec(async function (err, result) {
         if (err) {
             next(err)
-        } else{
-            res.send(result);
+        } else {
+            let r = Coin.Coin.find();
+            await r.exec(function(err, nameres){
+                if(err){
+                    next(err);
+                }else{
+                    result.forEach((obj) => {
+                        let namobj = nameres.find((i) => { return i['identifier'] === obj['identifier']})
+                        obj['displayName'] = namobj['display_name']
+                    })
+                    res.send(result);
+                }
+            });
+
+
         }
     });
 });
