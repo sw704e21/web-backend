@@ -5,6 +5,21 @@ let Coin = require('../models/Coin');
 let app = require('../app');
 let cors = require('cors');
 
+router.get('/all/names', cors(app.corsOptions), async function(req, res, next){
+    let q = Coin.Coin.find();
+    await q.exec(function(err, result){
+        if(err){
+            next(err);
+        }else{
+            let names = [];
+            result.forEach((obj) => {
+                names.push(obj['name']);
+            })
+            res.status(200);
+            res.send(names);
+        }
+    });
+});
 
 router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (req, res, next) {
     let sortParam = req.query.sortParam; // put a minus in front if sort by descending
