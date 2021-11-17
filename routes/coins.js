@@ -106,6 +106,107 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
     });
 });
 
+router.get('/speccoin/:identifier?:sortParam?',cors(app.corsOptions) , async function (req, res, next) {
+    let sortParam = req.query.sortParam; // put a minus in front if sort by descending
+    let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
+    let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
+    let s = req.query.identifier
+    let regex = new RegExp(s, 'i');
+    let q = Sentiment.Sentiment.aggregate([{$match: {$or: [{identifier: {"$regex": regex}}, {coin: {"$regex": regex}}]}}])
+        .group({
+            _id: "$coin",
+            identifier: {$max: "$identifier"},
+            mostInteractions: {$max: "$interaction"},
+            mentions:
+                {$sum:
+                    {$cond: [
+                        {$gte: ["$timestamp", oneday]},
+                        1,
+                        0
+                    ]}
+                },
+            posSentiment:
+                {$sum:
+                    {$cond: [
+                        {$gt: ['$sentiment', 0]},
+                        '$sentiment',
+                        0
+                    ]}
+                },
+            negSentiment:
+                {$sum:
+                    {$cond: [
+                        {$lt: ['$sentiment', 0]},
+                        '$sentiment',
+                        0
+                    ]}
+                },
+            yesterdayMentions:
+                {$sum:
+                    {$cond: [
+                        {$and: [
+                            {$gte: ["$timestamp", twoday]},
+                            {$lt: ["$timestamp", oneday]}
+                        ]},
+                        1,
+                        0
+                    ]}
+                }
+        })
+        .project({_id: 0,
+            name: "$_id",
+            identifier: 1,
+            mostInteractions: 1,
+            mentions: 1,
+            posSentiment: 1,
+            negSentiment: {$abs: '$negSentiment'},
+            relSentiment: {
+                $divide: [
+                    {$subtract: [
+                        "$posSentiment",
+                            {$abs: "$negSentiment"}
+                    ]},
+                    {$cond: [
+                        {$eq: [
+                            "$negSentiment",
+                            0
+                        ]},
+                        1,
+                        {$abs: "$negSentiment"}
+                    ]}
+                ]},
+            relMentions:
+                {$multiply: [
+                    {$divide: [
+                        {$subtract: [
+                            "$mentions",
+                            "$yesterdayMentions"
+                        ]},
+                        {$cond: [
+                            {$eq: [
+                                "$yesterdayMentions",
+                                0
+                            ]},
+                            1,
+                            "$yesterdayMentions"
+                        ]}
+                    ]},
+                    100
+                ]},
+            mostInfluence: {$sum: 1}
+        })
+        .sort(sortParam || "-mentions")
+        .limit(parseInt(req.query.length) || 25)
+
+    await q.exec(function (err, result) {
+        if (err) {
+            next(err)
+        } else{
+            res.send(result);
+        }
+    });
+});
+
 router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res, next) {
     let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * (req.query.age || 7));
     let now = new Date(Date.now());
