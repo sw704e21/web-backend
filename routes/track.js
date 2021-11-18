@@ -19,9 +19,12 @@ router.get('/', cors(app.corsOptions), async function (req, res, next) {
     });
 });
 
-router.post('/:name-:ident', cors(app.corsOptions), async function(req, res, next){
-    let name = req.params['name'].toLowerCase();
-    let identifier = req.params['ident'].toUpperCase();
+router.post('/', cors(app.corsOptions), async function(req, res, next){
+    let body = req.body;
+    let name = body['name'].toLowerCase();
+    body['name'] = name;
+    let identifier = body['identifier'].toUpperCase();
+    body['identifier'] = identifier;
     let q = Coin.Coin.find({$or: [{name: name}, {identifier: identifier}]});
     await q.exec(async function (err, result) {
         if (err) {
@@ -33,7 +36,7 @@ router.post('/:name-:ident', cors(app.corsOptions), async function(req, res, nex
                 next("Already tracking a coin with given name or identifier:" + result)
 
             } else {
-                await Coin.Coin.create({name: name, identifier: identifier}, function (err, obj, next) {
+                await Coin.Coin.create(body, function (err, obj, next) {
                     if (err) {
                         next(err);
                     } else {
@@ -59,6 +62,18 @@ router.post('/:name-:ident', cors(app.corsOptions), async function(req, res, nex
     });
 });
 
+router.put('/:id', cors(app.corsOptions), async function(req, res,next) {
+    let q = Coin.Coin.replaceOne({_id: req.params['id']},req.body);
+    const result = await q.exec();
+    if (result.acknowledged) {
+        res.status(200);
+        res.send(result.body);
+    }
+    else{
+        next(result.error);
+    }
+})
+
 router.delete('/:id', cors(app.corsOptions), async function (req, res, next) {
     const id = req.params['id'];
     let q = Coin.Coin.find({_id: id});
@@ -74,7 +89,7 @@ router.delete('/:id', cors(app.corsOptions), async function (req, res, next) {
                 next();
             } else {
                 let del = await Coin.Coin.remove({_id: id}).exec()
-                res.status(204);
+                res.status(200);
                 res.send('Successfully deleted ' + del.deletedCount + " objects");
             }
         }

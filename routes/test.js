@@ -38,7 +38,7 @@ router.delete('/:coin', cors(app.corsOptions),async function (req, res, next) {
         if(err) {
             next(err);
         } else {
-            res.status(204);
+            res.status(200);
             res.send('Successfully deleted objects:' + delres.deletedCount);
         }
     });
