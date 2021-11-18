@@ -135,10 +135,29 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
     });
 });
 
+router.get('/search/:identifier', cors(app.corsOptions), async function(req, res, next){
+    let query = req.params.identifier
+    let regex = new RegExp(query, 'i');
+    let q = Coin.Coin.find()
+    .or([{ identifier: regex}, { display_name: regex }])
+    .select({identifier: 1, display_name: 1, _id: 0});
+    await q.exec(function(err, result){
+        if(err){
+            next(err);
+        }else{
+            let names = [];
+            result.forEach((obj) => {
+                names.push(obj['name']);
+            })
+            res.status(200);
+            res.send(result);
+        }
+    });
+});
+
 router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res, next) {
     let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * (req.query.age || 7));
     let now = new Date(Date.now());
-
     let q = Sentiment.Sentiment.aggregate()
         .match({identifier: req.params['identifier'], timestamp: {$gte: date}})
         .group({
