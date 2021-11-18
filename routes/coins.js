@@ -124,7 +124,8 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
                 }else{
                     result.forEach((obj) => {
                         let namobj = nameres.find((i) => { return i['identifier'] === obj['identifier']})
-                        obj['displayName'] = namobj['display_name']
+                        obj['displayName'] = namobj['display_name'];
+                        obj['icon'] = namobj['icon'];
                     })
                     res.send(result);
                 }
@@ -145,10 +146,6 @@ router.get('/search/:identifier', cors(app.corsOptions), async function(req, res
         if(err){
             next(err);
         }else{
-            let names = [];
-            result.forEach((obj) => {
-                names.push(obj['name']);
-            })
             res.status(200);
             res.send(result);
         }
