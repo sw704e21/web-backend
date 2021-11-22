@@ -59,7 +59,7 @@ router.get('/posts', cors(app.corsOptions), async function (req, res, next) {
 });
 
 router.get('/urls', cors(app.corsOptions), async function(req, res, next) {
-    let q = Sentiment.find().select({_id: 0, url: 1});
+    let q = Sentiment.find({url: { $not: /www/ }}).find({$expr: {$gt: [{$strLenCP: "$url"}, 8]}}).select({_id: 0, url: 1, length: {$strLenCP: "$url"}, new: {$concat: ["https://www.", {$substr: ["$url", 8, -1]}]}});
     await q.exec(function(err, result){
        if (err){
            next(err);
@@ -69,6 +69,25 @@ router.get('/urls', cors(app.corsOptions), async function(req, res, next) {
            res.send(result);
        }
     });
-})
+});
+
+router.get('/fix', cors(app.corsOptions), async function(req, res, next){
+    let q = Sentiment.find({url: { $not: /www/ }}).find({$expr: {$gt: [{$strLenCP: "$url"}, 8]}});
+    await q.exec(async function (err, result) {
+        if (err) {
+            next(err);
+        } else {
+            let i = 0;
+            for (const doc of result) {
+                console.log(i);
+                i++;
+                const newurl = 'https://www.' + doc['url'].substr(8);
+                await Sentiment.updateOne({_id: doc['_id']}, {url: newurl}).exec();
+            }
+            res.status(200);
+            res.send()
+        }
+    })
+});
 
 module.exports = router;
