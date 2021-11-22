@@ -141,7 +141,7 @@ router.get('/search/:identifier', cors(app.corsOptions), async function(req, res
     let regex = new RegExp(query, 'i');
     let q = Coin.Coin.find()
     .or([{ identifier: regex}, { display_name: regex }])
-    .select({identifier: 1, display_name: 1, _id: 0});
+    .select({icon: 1, identifier: 1, display_name: 1, _id: 0});
     await q.exec(function(err, result){
         if(err){
             next(err);

@@ -58,4 +58,17 @@ router.get('/posts', cors(app.corsOptions), async function (req, res, next) {
     })
 });
 
+router.get('/urls', cors(app.corsOptions), async function(req, res, next) {
+    let q = Sentiment.find().select({_id: 0, url: 1});
+    await q.exec(function(err, result){
+       if (err){
+           next(err);
+       }
+       else{
+           res.status(200);
+           res.send(result);
+       }
+    });
+})
+
 module.exports = router;
