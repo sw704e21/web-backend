@@ -66,6 +66,27 @@ router.get('/sentiment/:identifier', cors(app.corsOptions), async function(req, 
     });
 });
 
+router.get('/interactions/:identifier', cors(app.corsOptions), async function(req, res, next){
+    const now = new Date(Date.now());
+    let oneday = new Date(now - 1000 * 60 * 60 * 24); // subtract one day
+    let q = Sentiment.Sentiment.aggregate()
+        .match({identifier: req.params['identifier'].toUpperCase(), timestamp: {$gte: oneday}})
+        .group({
+            _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
+            interactions: {$sum: "$interaction"}
+        })
+        .sort({_id: 'desc'});
+    await q.exec(function(err, result){
+        if(err){
+            next(err);
+        }else{
+            let send = ensure24(result, "interactions");
+            res.status(200);
+            res.send(send);
+        }
+    });
+})
+
 
 
 module.exports = router;
