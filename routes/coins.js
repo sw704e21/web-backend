@@ -136,7 +136,7 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
 });
 
 router.get('/search/:identifier', cors(app.corsOptions), async function(req, res, next){
-    let query = req.params.identifier
+    let query = req.params.identifier.toUpperCase();
     let regex = new RegExp(query, 'i');
     let q = Coin.Coin.find()
     .or([{ identifier: regex}, { display_name: regex }])
@@ -156,7 +156,7 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
     let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
 
     let q = Sentiment.Sentiment.aggregate()
-        .match({identifier: req.params['identifier'],timestamp: {$gte: twoday}})
+        .match({identifier: req.params['identifier'].toUpperCase(),timestamp: {$gte: twoday}})
         .group({
             _id: "$identifier",
             mostInteractions: {$max: "$interaction"},
@@ -244,7 +244,7 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
         } else {
             if (result.length === 0) {
                 res.status(404);
-                res.send(`${req.params['identifier']} not found`);
+                res.send(`${req.params['identifier'].toUpperCase()} not found`);
             } else {
                 let send = result[0]
                 let r = Coin.Coin.findOne({identifier: send['identifier']});
@@ -270,7 +270,7 @@ router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res
     let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * (req.query.age || 7));
     let now = new Date(Date.now());
     let q = Sentiment.Sentiment.aggregate()
-        .match({identifier: req.params['identifier'], timestamp: {$gte: date}})
+        .match({identifier: req.params['identifier'].toUpperCase(), timestamp: {$gte: date}})
         .group({
             "_id": {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60 ]}},
             "mentions": {$sum: 1},
