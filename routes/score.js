@@ -58,11 +58,14 @@ router.get('/sentiment/:identifier', cors(app.corsOptions), async function(req, 
             next(err);
         }else{
             let send = ensure24(result,"sentiment");
+            const sum = send.reduce((a, b) => a + b, 0);
+            const avg = (sum / send.length) || 0;
             res.status(200);
-            res.send(send);
+            res.send({'24hours': avg, 'list': send});
         }
     });
 });
+
 
 
 module.exports = router;
