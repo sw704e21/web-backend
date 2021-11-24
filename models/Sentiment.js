@@ -1,4 +1,4 @@
-let mongoose = require('mongoose')
+let mongoose = require('mongoose');
 
 const sentimentSchema = new mongoose.Schema({
     timestamp: {type: Date, default: Date.now()},
