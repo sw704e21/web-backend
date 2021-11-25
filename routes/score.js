@@ -7,18 +7,18 @@ let Price = require('../models/Price');
 
 function ensure24(lst, key){
     let send = [];
-    let i = 23
+    let i = 0
     lst.forEach((item) => {
-        while (item._id < i){
+        while (item._id > i){
             send.push(0);
-            i--;
+            i++;
         }
         send.push(item[key]);
-        i--;
+        i++;
     });
-    while(i >= 0){
+    while(i < 24){
         send.push(0);
-        i--;
+        i++;
     }
     return send;
 }
@@ -32,7 +32,7 @@ router.get('/mentions/:identifier', cors(app.corsOptions), async function (req, 
             _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
             mentions: {$sum: 1}
         })
-        .sort({_id: 'desc'});
+        .sort("_id");
     await q.exec(function(err, result){
         if(err){
             next(err);
@@ -53,7 +53,7 @@ router.get('/sentiment/:identifier', cors(app.corsOptions), async function(req, 
             _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
             sentiment: {$avg: "$sentiment"}
         })
-        .sort({_id: 'desc'});
+        .sort("_id");
     await q.exec(function(err, result){
         if(err){
             next(err);
@@ -76,7 +76,7 @@ router.get('/interactions/:identifier', cors(app.corsOptions), async function(re
             _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
             interactions: {$sum: "$interaction"}
         })
-        .sort({_id: 'desc'});
+        .sort("_id");
     await q.exec(function(err, result){
         if(err){
             next(err);
