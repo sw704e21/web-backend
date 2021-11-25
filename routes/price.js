@@ -38,7 +38,7 @@ router.post('/', cors(app.corsOptions), async function(req, res, next){
                             if (err) {
                                 next(err);
                             } else {
-                                if (result.length >= 24) {
+                                if (result.length > 24) {
                                     let old = result.sort(
                                         (a, b) => {
                                             return a['timestamp'] > b['timestamp'] ? 1 :

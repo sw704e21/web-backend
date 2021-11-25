@@ -3,6 +3,7 @@ let router = express.Router();
 let app = require('../app');
 let cors = require('cors');
 let Sentiment = require('../models/Sentiment');
+let Price = require('../models/Price');
 
 function ensure24(lst, key){
     let send = [];
@@ -85,7 +86,27 @@ router.get('/interactions/:identifier', cors(app.corsOptions), async function(re
             res.send(send);
         }
     });
-})
+});
+
+router.get('/price/:identifier', cors(app.corsOptions), async function(req, res, next){
+    let q = Price.Price.find({identifier: req.params['identifier'].toUpperCase()});
+    await q.exec(function(err, result) {
+        if(err){
+            next(err);
+        }else{
+            let send = []
+            result.forEach((item) =>{
+                send.push(item['price']);
+            })
+            send.reverse();
+            while(send.length < 24){
+                send.push(0);
+            }
+            res.status(200);
+            res.send(send);
+        }
+    });
+});
 
 
 
