@@ -30,7 +30,14 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
         .group({
             _id: "$coin",
             identifier: {$max: "$identifier"},
-            mostInteractions: {$sum: "$interaction"},
+            mostInteractions:
+                {$sum:
+                    {$cond: [
+                        {$gte: ["$timestamp", oneday]},
+                        "$interaction",
+                        0
+                    ]}
+                },
             mentions:
                 {$sum:
                     {$cond: [
@@ -42,7 +49,10 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
             posSentiment:
                 {$sum:
                     {$cond: [
-                        {$gt: ['$sentiment', 0]},
+                        {$and: [
+                            {$gt: ['$sentiment', 0]},
+                            {$gte: ["$timestamp", oneday]}
+                        ]},
                         '$sentiment',
                         0
                     ]}
@@ -50,7 +60,10 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
             negSentiment:
                 {$sum:
                     {$cond: [
-                        {$lt: ['$sentiment', 0]},
+                        {$and: [
+                            {$lt: ['$sentiment', 0]},
+                            {$gte: ["$timestamp", oneday]}
+                        ]},
                         '$sentiment',
                         0
                     ]}
@@ -65,7 +78,8 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
                         1,
                         0
                     ]}
-                }
+                },
+            mostInfluence: {$max: "$influence"}
         })
         .project({_id: 0,
             name: "$_id",
@@ -107,7 +121,7 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
                     ]},
                     100
                 ]},
-            mostInfluence: {$sum: 1}
+            mostInfluence: 1
         })
         .sort(sortParam || "-mentions")
         .limit(parseInt(req.query.length) || 25)
@@ -166,39 +180,46 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
             mostInteractions: {$max: "$interaction"},
             mentions:
                 {$sum:
-                        {$cond: [
-                                {$gte: ["$timestamp", oneday]},
-                                1,
-                                0
-                            ]}
+                    {$cond: [
+                        {$gte: ["$timestamp", oneday]},
+                        "$interaction",
+                        0
+                        ]}
                 },
             posSentiment:
                 {$sum:
-                        {$cond: [
+                    {$cond: [
+                        {$and: [
                                 {$gt: ['$sentiment', 0]},
-                                '$sentiment',
-                                0
-                            ]}
+                                {$gte: ["$timestamp", oneday]}
+                            ]},
+                        '$sentiment',
+                        0
+                    ]}
                 },
             negSentiment:
                 {$sum:
-                        {$cond: [
-                                {$lt: ['$sentiment', 0]},
-                                '$sentiment',
-                                0
-                            ]}
+                    {$cond: [
+                        {$and: [
+                            {$lt: ['$sentiment', 0]},
+                            {$gte: ["$timestamp", oneday]}
+                        ]},
+                        '$sentiment',
+                        0
+                    ]}
                 },
             yesterdayMentions:
                 {$sum:
-                        {$cond: [
-                                {$and: [
-                                        {$gte: ["$timestamp", twoday]},
-                                        {$lt: ["$timestamp", oneday]}
-                                    ]},
-                                1,
-                                0
-                            ]}
-                }
+                    {$cond: [
+                        {$and: [
+                            {$gte: ["$timestamp", twoday]},
+                            {$lt: ["$timestamp", oneday]}
+                            ]},
+                        1,
+                        0
+                    ]}
+                },
+            mostInfluence: {$max: "$influence"}
         })
         .project({_id: 0,
             identifier: "$_id",
@@ -239,7 +260,7 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
                             ]},
                         100
                     ]},
-            mostInfluence: {$sum: 1}
+            mostInfluence: 1
         });
 
     await q.exec(async function (err, result) {
@@ -281,7 +302,8 @@ router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res
             "interaction": {$sum: "$interaction"},
             "sentiment": {$sum: "$sentiment"},
             "negSentiment": {$sum: {$cond: [{$lt: ['$sentiment', 0]}, '$sentiment', 0]}},
-            "posSentiment": {$sum: {$cond: [{$gt: ['$sentiment', 0]}, '$sentiment', 0]}}
+            "posSentiment": {$sum: {$cond: [{$gt: ['$sentiment', 0]}, '$sentiment', 0]}},
+            "mostInfluence": {$max: "$influence"}
             }
         )
         .project({
@@ -291,7 +313,8 @@ router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res
             interaction: 1,
             sentiment: 1,
             negSentiment: {$abs: "$negSentiment"},
-            posSentiment: 1
+            posSentiment: 1,
+            mostInfluence: 1
         })
         .sort("time")
     await q.exec(function (err, result) {
