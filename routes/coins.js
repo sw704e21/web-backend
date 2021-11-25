@@ -122,13 +122,17 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
                 if(err){
                     next(err);
                 }else{
+                    let send = []
                     result.forEach((obj) => {
-                        let namobj = nameres.find((i) => { return i['identifier'] === obj['identifier']})
-                        obj['displayName'] = namobj['display_name'];
-                        obj['icon'] = namobj['icon'];
-                        obj['price'] = namobj['price'];
+                        let namobj = nameres.find((i) => { return i['identifier'] === obj['identifier']});
+                        if (namobj) {
+                            obj['displayName'] = namobj['display_name'];
+                            obj['icon'] = namobj['icon'];
+                            obj['price'] = namobj['price'];
+                            send.push(obj);
+                        }
                     })
-                    res.send(result);
+                    res.send(send);
                 }
             });
         }
