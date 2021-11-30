@@ -138,5 +138,42 @@ router.post('/', cors(app.corsOptions), async function (req, res, next){
 
 })
 
+router.get('/all', cors(app.corsOptions), async function(req, res, next){
+    let q = Score.Score.find();
+    await q.exec(function(err, result){
+        if(err){
+            next(err)
+        }
+        else{
+            if(result.length > 0){
+                res.status(200);
+                res.send(result);
+            }
+            else{
+                res.status(404);
+                res.send('Scores not found.')
+            }
+        }
+    })
+})
+
+router.get('/:identifier', cors(app.corsOptions), async function(req, res, next){
+    let q = Score.Score.find({identifier: req.params['identifier']});
+    await q.exec(function(err, result){
+        if(err){
+            next(err)
+        }
+        else{
+            if(result.length > 0){
+                res.status(200);
+                res.send(result);
+            }
+            else{
+                res.status(404);
+                res.send('Scores not found.')
+            }
+        }
+    })
+})
 
 module.exports = router;
