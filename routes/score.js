@@ -4,6 +4,8 @@ let app = require('../app');
 let cors = require('cors');
 let Sentiment = require('../models/Sentiment');
 let Price = require('../models/Price');
+const Coin = require("../models/Coin");
+let Score = require('../models/Score');
 
 function ensure24(lst, key){
     let send = [];
@@ -108,6 +110,33 @@ router.get('/price/:identifier', cors(app.corsOptions), async function(req, res,
     });
 });
 
+router.post('/', cors(app.corsOptions), async function (req, res, next){
+    let body = req.body;
+    let q = Coin.Coin.findOne({identifier: body.identifier});
+    await q.exec(async function (error,result) {
+        if (error){
+            next(error)
+        }
+        else{
+            if (result){
+                body.timestamp = new Date(Date.now());
+                await Score.Score.create(body, function (err, obj) {
+                    if (err) {
+                        next(err);
+                    } else {
+                        res.status(201);
+                        res.send(obj);
+                    }
+                })
+            }
+            else{
+                res.status(404);
+                res.send(`${body.identifier} not found`)
+            }
+        }
+    })
+
+})
 
 
 module.exports = router;
