@@ -4,6 +4,7 @@ let Sentiment = require('../models/Sentiment');
 let Coin = require('../models/Coin');
 let app = require('../app');
 let cors = require('cors');
+let Score = require('../models/Score')
 
 router.get('/all/names', cors(app.corsOptions), async function(req, res, next){
     let q = Coin.Coin.find();
@@ -132,21 +133,35 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
             next(err)
         } else {
             let r = Coin.Coin.find();
-            await r.exec(function(err, nameres){
+            await r.exec(async function(err, nameres){
                 if(err){
                     next(err);
                 }else{
-                    let send = []
-                    result.forEach((obj) => {
-                        let namobj = nameres.find((i) => { return i['identifier'] === obj['identifier']});
-                        if (namobj) {
-                            obj['displayName'] = namobj['display_name'];
-                            obj['icon'] = namobj['icon'];
-                            obj['price'] = namobj['price'];
-                            send.push(obj);
+                    let s = Score.Score.find();
+                    await s.exec(async function(err, scoreResult){
+                        if(err){
+                            next(err)
+                        }
+                        else{
+                            let send = []
+                            result.forEach((obj) => {
+                                let namobj = nameres.find((i) => { return i['identifier'] === obj['identifier']});
+                                let scoreobj = scoreResult.find((i) => { return i['identifier'] === obj['identifier']});
+                                if (namobj && scoreobj) {
+                                    obj['displayName'] = namobj['display_name'];
+                                    obj['icon'] = namobj['icon'];
+                                    obj['price'] = namobj['price'];
+                                    obj['price_score'] = scoreobj['price_score']
+                                    obj['social_score'] = scoreobj['social_score']
+                                    obj['average_sentiment'] = scoreobj['average_sentiment']
+                                    obj['correlation_rank'] = scoreobj['correlation_rank']
+                                    obj['final_score'] = scoreobj['final_score']
+                                    send.push(obj);
+                                }
+                            })
+                            res.send(send);
                         }
                     })
-                    res.send(send);
                 }
             });
         }
@@ -177,12 +192,19 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
         .match({identifier: req.params['identifier'].toUpperCase(),timestamp: {$gte: twoday}})
         .group({
             _id: "$identifier",
-            mostInteractions: {$max: "$interaction"},
+            mostInteractions:
+                {$sum:
+                        {$cond: [
+                                {$gte: ["$timestamp", oneday]},
+                                "$interaction",
+                                0
+                            ]}
+                },
             mentions:
                 {$sum:
                     {$cond: [
                         {$gte: ["$timestamp", oneday]},
-                        "$interaction",
+                        1,
                         0
                         ]}
                 },
@@ -219,7 +241,6 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
                         0
                     ]}
                 },
-            mostInfluence: {$max: "$influence"}
         })
         .project({_id: 0,
             identifier: "$_id",
@@ -260,7 +281,6 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
                             ]},
                         100
                     ]},
-            mostInfluence: 1
         });
 
     await q.exec(async function (err, result) {
@@ -273,19 +293,30 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
             } else {
                 let send = result[0]
                 let r = Coin.Coin.findOne({identifier: send['identifier']});
-                await r.exec(function (err, fresult) {
-                    if(err){
+                await r.exec(async function (err, fresult) {
+                    if (err) {
                         next(err);
+                    } else {
+                        let s = Score.Score.findOne({identifier: send['identifier']});
+                        await s.exec(async function (err, scoreResult) {
+                            if (err) {
+                                next(err)
+                            } else {
+                                send['displayName'] = fresult['display_name'];
+                                send['icon'] = fresult['icon'];
+                                send['price'] = fresult['price'];
+                                send['price_score'] = scoreResult['price_score']
+                                send['social_score'] = scoreResult['social_score']
+                                send['average_sentiment'] = scoreResult['average_sentiment']
+                                send['correlation_rank'] = scoreResult['correlation_rank']
+                                send['final_score'] = scoreResult['final_score']
+                                res.status(200);
+                                res.send(send);
+                            }
+                        })
                     }
-                    else{
-                        send['displayName'] = fresult['display_name'];
-                        send['icon'] = fresult['icon'];
-                        send['price'] = fresult['price'];
-                        res.status(200);
-                        res.send(send);
-                    }
-                })
 
+                })
             }
         }
     })
