@@ -299,11 +299,13 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
                     if (err) {
                         next(err);
                     } else {
-                        let s = Score.Score.findOne({identifier: send['identifier']});
+                        let s = Score.Score.find({identifier: send['identifier']}).sort('-timestamp').limit(1);
                         await s.exec(async function (err, scoreResult) {
                             if (err) {
                                 next(err)
                             } else {
+                                console.log(scoreResult)
+                                scoreResult = scoreResult[0]
                                 send['displayName'] = fresult['display_name'];
                                 send['icon'] = fresult['icon'];
                                 send['price'] = fresult['price'];
