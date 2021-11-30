@@ -241,6 +241,7 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
                         0
                     ]}
                 },
+            mostInfluence: {$max: "$influence"}
         })
         .project({_id: 0,
             identifier: "$_id",
@@ -281,6 +282,7 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
                             ]},
                         100
                     ]},
+            mostInfluence: 1
         });
 
     await q.exec(async function (err, result) {
