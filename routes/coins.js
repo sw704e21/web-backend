@@ -137,7 +137,7 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
                 if(err){
                     next(err);
                 }else{
-                    let s = Score.Score.find();
+                    let s = Score.Score.find().sort("-timestamp");
                     await s.exec(async function(err, scoreResult){
                         if(err){
                             next(err)
