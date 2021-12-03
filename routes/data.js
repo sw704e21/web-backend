@@ -3,44 +3,109 @@ let router = express.Router();
 let app = require('../app');
 let cors = require('cors');
 let Sentiment = require('../models/Sentiment');
-
-
-let spawn = require('child_process').spawn;
-//const script = 'C:\\Users\\Bruger\\PycharmProjects\\server-backend\\src\\'
+let TFdict = require('../models/tf-dict');
+let Coin = require('../models/Coin');
+const {Kafka} = require('kafkajs');
+const server = "104.41.213.247:9092";
+const topic = "PostsToProcess";
 
 router.post('/', cors(app.corsOptions), async function (req, res, next) {
     const body = req.body;
     console.log(body)
     let q = Sentiment.Sentiment.find({url: body['url']});
-    await q.exec(function (err, result) {
-        if(err){
+    await q.exec(async function (err, result) {
+        if (err) {
             next(err);
-        }
-        else{
-            console.log(result);
-            if(result.length > 0){
+        } else {
+            if (result.length > 0) {
                 res.status(403);
                 res.send("Post with url already in the system: " + body['url']);
-            }
-            else{
-                const ls = spawn('python3', [app.serverPath + 'src/add_to_queue.py', JSON.stringify(body)]);
-                ls.stdout.on('data', (data) => {
-                    console.log(`stdout: ${data}`);
-                });
+            } else {
+                const kafka = new Kafka({clientId: 'Post-producer', brokers: [server]});
+                const producer = kafka.producer()
 
-                ls.stderr.on('data', (data) => {
-                    console.log(`stderr: ${data}`);
+                await producer.connect()
+                await producer.send({
+                    topic: topic,
+                    messages: [
+                        {value: JSON.stringify(body)},
+                    ],
                 });
-
-                ls.on('close', (code) => {
-                    console.log(`child proccess exited with code ${code}`);
-                })
+                await producer.disconnect()
                 res.status(200);
                 res.send();
             }
         }
     });
 
-})
+});
+
+router.post('/tfdict/:name', cors(app.corsOptions), async function(req, res, next){
+    let dict = req.body;
+    let n = req.params['name'];
+    let q = Coin.Coin.findOne({name: n});
+    await q.exec(async function(err, result){
+       if(err){
+           next(err);
+       } else{
+           if (result) {
+               const ident = result['identifier'];
+               let r = TFdict.TFdict.findOne({identifier: ident});
+               await r.exec(async function (err, result) {
+                   if (err) {
+                       next(err);
+                   } else {
+                       if (result) {
+                           let s = TFdict.TFdict.updateOne({identifier: ident}, {TFdict: dict});
+                           await s.exec(function (err, update) {
+                               if (err) {
+                                   next(err);
+                               } else {
+                                   if (update.acknowledged) {
+                                       res.status(200);
+                                       res.send(`TFdict for ${ident} updated`);
+                                   } else {
+                                       res.status(500);
+                                       res.send(`An unknown error occurred when updating the TFdict for ${ident}`);
+                                   }
+                               }
+                           });
+                       } else {
+                           await TFdict.TFdict.create({identifier: ident, TFdict: dict}, function (err, create) {
+                               if (err) {
+                                   next(err);
+                               } else {
+                                   res.status(201);
+                                   res.send(`Created TFdict for ${create['identifier']}`);
+                               }
+                           });
+                       }
+                   }
+               });
+           } else{
+               res.status(404);
+               res.send(`Coin ${n} not found`);
+           }
+       }
+    });
+});
+
+router.get('/tfdict/:identifier', cors(app.corsOptions), async function(req, res, next){
+    const ident = req.params['identifier'].toUpperCase();
+    let q = TFdict.TFdict.findOne({identifier: ident});
+    await q.exec(function (err, result){
+       if(err){
+           next(err);
+       } else{
+           if(result){
+               res.status(200);
+               res.send(result.TFdict);
+           }else{
+               res.status(404);
+               res.send(`TFdict for ${ident} not found`);
+           }
+       }
+    });
+});
 
 module.exports = router;
