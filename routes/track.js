@@ -178,9 +178,6 @@ router.get('/start', cors(app.corsOptions), async function(req, res, next){
            });
            const kafka = new Kafka({clientId: 'Tag-producer', brokers: [server]});
            const producer = kafka.producer();
-
-
-
            await producer.connect();
            await producer.send({
                topic: topic,
