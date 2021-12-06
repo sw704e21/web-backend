@@ -189,8 +189,8 @@ router.get('/start', cors(app.corsOptions), async function(req, res, next){
            res.send("Sent tags to crawler");
        }
    });
-
 });
+
 
 
 

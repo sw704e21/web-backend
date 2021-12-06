@@ -24,6 +24,7 @@ router.get('/all/names', cors(app.corsOptions), async function(req, res, next){
 
 router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (req, res, next) {
     let sortParam = req.query.sortParam; // put a minus in front if sort by descending
+    console.log(sortParam)
     let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
     let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
     let q = Sentiment.Sentiment.aggregate()
@@ -125,8 +126,6 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
             mostInfluence: 1
         })
         .sort(sortParam || "-mentions")
-        .limit(parseInt(req.query.length) || 25)
-
     // Add display names, icons and price
     await q.exec(async function (err, result) {
         if (err) {
@@ -158,10 +157,16 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
                                     obj['final_score'] = scoreobj['final_score']
                                     send.push(obj);
                                 }
-                            })
+                            });
+                            if(sortParam === "final_score"){
+                                send.sort((a,b)=> { return a['final_score'] > b['final_score'] ? 1 : ['final_score'] > a['final_score'] ? -1: 0});
+                            }else if(sortParam === "-final_score"){
+                                send.sort((a,b)=> { return a['final_score'] < b['final_score'] ? 1 : b['final_score'] < a['final_score'] ? -1: 0});
+                            }
+                            send.slice(0, parseInt(req.query.length) || 25)
                             res.send(send);
                         }
-                    })
+                    });
                 }
             });
         }
