@@ -432,7 +432,7 @@ router.patch('/:url?:interactions?', cors(app.corsOptions), async function (req,
 
 router.post('/', cors(app.corsOptions), async function (req, res, next) {
     let body = req.body;
-    const name = body['coin'];
+    const ident = body['identifier'];
     let q = Coin.Coin.find({name: name});
     await q.exec(async function (err, result) {
         if (err) {
@@ -440,12 +440,11 @@ router.post('/', cors(app.corsOptions), async function (req, res, next) {
         } else {
             if (result.length === 0) {
                 res.status(404);
-                res.send('Not tracking coin with name ' + name);
+                res.send('Not tracking coin with identifier ' + ident);
             } else if (result.length > 1) {
                 res.status(409);
-                res.send('Multiple coins with name ' + name);
+                res.send('Multiple coins with identifier ' + ident);
             } else {
-                body['identifier'] = result[0]['identifier']
                 let e = Sentiment.Sentiment.find({url: body['url']});
                 await e.exec(async function (err, result) {
                     if (err) {
