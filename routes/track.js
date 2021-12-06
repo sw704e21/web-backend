@@ -3,9 +3,11 @@ let router = express.Router();
 const cors = require("cors");
 const Coin = require("../models/Coin");
 const app = require("../app");
-const {spawn} = require("child_process");
 const apikey = "dfb9d16f-b1ed-41cc-ab52-1a2384dfd566";
 const https = require('https');
+const {Kafka} = require('kafkajs');
+const server = "104.41.213.247:9092";
+const topic = "CoinsToTrack";
 
 
 router.get('/', cors(app.corsOptions), async function (req, res, next) {
@@ -58,29 +60,27 @@ router.post('/', cors(app.corsOptions), async function(req, res, next){
                     response.on('data', async (data) => {
                         data = JSON.parse(data);
                         body['icon'] = data['webp32'];
-                        await Coin.Coin.create(body, function (err, obj, next) {
+                        await Coin.Coin.create(body, async function (err, obj, next) {
                             if (err) {
                                 next(err);
                             } else {
 
-
-                                const ls = spawn('python3', [app.crawlerPath + 'src/add_subreddit.py', name])
-                                ls.stdout.on('data', (data) => {
-                                    console.log(`stdout: ${data}`);
+                                let tosend = [];
+                                body.tags.forEach((item) => {
+                                    tosend.push({value: item})
                                 });
 
-                                ls.stderr.on('data', (data) => {
-                                    console.log(`stderr: ${data}`);
+                                const kafka = new Kafka({clientId: 'Tag-producer', brokers: [server]});
+                                const producer = kafka.producer();
+
+                                await producer.connect();
+                                await producer.send({
+                                    topic: topic,
+                                    messages: tosend
                                 });
-
-                                ls.on('close', (code) => {
-                                    console.log(`child proccess exited with code ${code}`)
-                                })
-
-
-                                // Start script in crawler
-                                res.status(201)
-                                res.send(obj)
+                                await producer.disconnect();
+                                res.status(201);
+                                res.send(obj);
                             }
                         })
                     })
@@ -162,7 +162,38 @@ router.delete('/:id', cors(app.corsOptions), async function (req, res, next) {
             }
         }
     });
-})
+});
+
+router.get('/start', cors(app.corsOptions), async function(req, res, next){
+   let q =  Coin.Coin.find().select({tags: 1});
+   await q.exec(async function (err, result) {
+       if (err) {
+           next(err);
+       } else {
+           let tosend = [];
+           result.forEach((coin) => {
+               coin.tags.forEach((tag) =>{
+                   tosend.push({value: tag});
+               });
+           });
+           const kafka = new Kafka({clientId: 'Tag-producer', brokers: [server]});
+           const producer = kafka.producer();
+
+
+
+           await producer.connect();
+           await producer.send({
+               topic: topic,
+               messages: tosend
+           });
+           await producer.disconnect();
+
+           res.status(200);
+           res.send("Sent tags to crawler");
+       }
+   });
+
+});
 
 
 

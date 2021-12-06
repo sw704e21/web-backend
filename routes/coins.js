@@ -327,7 +327,8 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
 })
 
 router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res, next) {
-    let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * (req.query.age || 7));
+    const age = (req.query.age || 7)
+    let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * age);
     let now = new Date(Date.now());
     let q = Sentiment.Sentiment.aggregate()
         .match({identifier: req.params['identifier'].toUpperCase(), timestamp: {$gte: date}})
@@ -358,12 +359,37 @@ router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res
         }
         else {
             if (result.length === 0) {
-                res.status(404)
-                res.send( `${req.params['identifier']} not found!`)
+                res.status(404);
+                res.send( `${req.params['identifier']} not found!`);
             }
             else {
-                res.statusCode = 200
-                res.send(result)
+                let send = [];
+                if (result.length < 24 * age){
+                    let i = 0;
+                    let j = 0;
+                    while(i < 24 * age){
+                        let item = result[j];
+                        if(item && item.time === i){
+                            send.push(item);
+                            j++;
+                        }else{
+                            send.push({
+                                time: i,
+                                mentions: 0,
+                                interaction: 0,
+                                sentiment: 0,
+                                negSentiment: 0,
+                                posSentiment: 0,
+                                mostInfluence: 0
+                            });
+                        }
+                        i++;
+                    }
+                }else{
+                    send = result;
+                }
+                res.statusCode = 200;
+                res.send(send);
             }
         }
     })
