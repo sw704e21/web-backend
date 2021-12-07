@@ -29,9 +29,9 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
     let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
     let q = Sentiment.Sentiment.aggregate()
         .match({timestamp: {$gte: twoday}})
+        .unwind('$identifiers')
         .group({
-            _id: "$coin",
-            identifier: {$max: "$identifier"},
+            _id: "$identifiers",
             mostInteractions:
                 {$sum:
                     {$cond: [
@@ -84,8 +84,7 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
             mostInfluence: {$max: "$influence"}
         })
         .project({_id: 0,
-            name: "$_id",
-            identifier: 1,
+            identifier: "$_id",
             mostInteractions: 1,
             mentions: 1,
             posSentiment: 1,
@@ -192,11 +191,12 @@ router.get('/search/:identifier', cors(app.corsOptions), async function(req, res
 router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, next) {
     let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
     let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
-
+    const ident = req.params['identifier'].toUpperCase();
     let q = Sentiment.Sentiment.aggregate()
-        .match({identifier: req.params['identifier'].toUpperCase(),timestamp: {$gte: twoday}})
+        .match({identifiers: {$elemMatch: {$eq: ident}} ,timestamp: {$gte: twoday}})
+        .unwind('$identifiers')
         .group({
-            _id: "$identifier",
+            _id: "$identifiers",
             mostInteractions:
                 {$sum:
                         {$cond: [
@@ -247,7 +247,7 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
                     ]}
                 },
             mostInfluence: {$max: "$influence"}
-        })
+        }).match({_id: ident})
         .project({_id: 0,
             identifier: "$_id",
             mostInteractions: 1,
@@ -322,21 +322,23 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
                                 res.status(200);
                                 res.send(send);
                             }
-                        })
+                        });
                     }
-
-                })
+                });
             }
         }
-    })
-})
+    });
+});
 
 router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res, next) {
     const age = (req.query.age || 7)
     let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * age);
     let now = new Date(Date.now());
+    const ident = req.params['identifier'].toUpperCase();
     let q = Sentiment.Sentiment.aggregate()
-        .match({identifier: req.params['identifier'].toUpperCase(), timestamp: {$gte: date}})
+        .match({identifiers: {$elemMatch: {$eq: ident}}, timestamp: {$gte: date}})
+        .unwind('$identifiers')
+        .match({identifiers: ident})
         .group({
             "_id": {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60 ]}},
             "mentions": {$sum: 1},
@@ -432,8 +434,8 @@ router.patch('/:url?:interactions?', cors(app.corsOptions), async function (req,
 
 router.post('/', cors(app.corsOptions), async function (req, res, next) {
     let body = req.body;
-    const ident = body['identifier'];
-    let q = Coin.Coin.find({name: name});
+    const ident = body['identifiers'];
+    let q = Coin.Coin.find({identifier: {$in: ident}});
     await q.exec(async function (err, result) {
         if (err) {
             next(err);
@@ -441,9 +443,6 @@ router.post('/', cors(app.corsOptions), async function (req, res, next) {
             if (result.length === 0) {
                 res.status(404);
                 res.send('Not tracking coin with identifier ' + ident);
-            } else if (result.length > 1) {
-                res.status(409);
-                res.send('Multiple coins with identifier ' + ident);
             } else {
                 let e = Sentiment.Sentiment.find({url: body['url']});
                 await e.exec(async function (err, result) {

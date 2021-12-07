@@ -5,6 +5,70 @@ const {spawn} = require("child_process");
 let app = require('../app');
 let cors = require('cors');
 const {Sentiment} = require("../models/Sentiment");
+const {Coin} = require("../models/Coin");
+
+router.get('/mult', cors(app.corsOptions), async function(req, res, next){
+    const ids = req.body['identifiers'];
+    let q = Sentiment.find({identifier: {$in: ids}});
+    await q.exec(function(err, result) {
+        if(err){
+            next(err);
+        } else{
+            res.status(200);
+            res.send(result);
+        }
+    });
+});
+
+router.get('/tags', cors(app.corsOptions), async function(req, res, next){
+    let q = Coin.find();
+    await q.exec(async function (err, result) {
+        if (err) {
+            next(err);
+        } else {
+            for (const doc of result) {
+                let tags = [doc.identifier, doc.display_name];
+                await Coin.updateOne({_id: doc.id}, {tags: tags}).exec();
+            }
+            res.status(200);
+            res.send();
+
+        }
+    });
+});
+
+router.get('/unwind', cors(app.corsOptions), async function(req, res, next){
+    let oneday = new Date(Date.now() - 1000 * 60 * 60 );
+    let q = Sentiment.aggregate()
+        .match({timestamp: {$gte: oneday}})
+        .unwind('$identifiers')
+        .group({_id: "$identifiers", mentions: {$sum: 1}});
+    await q.exec(function(err, result){
+        if(err){
+            next(err);
+        }else{
+            res.status(200);
+            res.send(result);
+        }
+    })
+});
+
+router.get('/identifiers', cors(app.corsOptions), async function (req, res, next) {
+    let q = Sentiment.find({"identifiers.0": {$exists: false} });
+    await q.exec(async function (err, result) {
+        if(err){
+            next(err);
+        } else{
+            console.log(result.length);
+            for(const doc of result){
+                const ids = [doc.identifier];
+                await Sentiment.updateOne({_id: doc._id}, {identifiers: ids}).exec();
+            }
+            res.status(200);
+            res.send();
+        }
+    });
+});
 
 
 router.get('/date', cors(app.corsOptions), function (req, res) {

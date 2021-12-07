@@ -192,7 +192,15 @@ router.get('/start', cors(app.corsOptions), async function(req, res, next){
 });
 
 router.get('/tags', cors(app.corsOptions), async function(req, res, next){
-    let q = Coin.Coin.find().select({identifier: 1, tags: 1})
+    let q = Coin.Coin.find().select({identifier: 1, tags: 1});
+    await q.exec(function(err, result){
+       if(err){
+           next(err);
+       } else{
+           res.status(200);
+           res.send(result);
+       }
+    });
 })
 
 
