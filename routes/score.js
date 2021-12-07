@@ -26,8 +26,11 @@ function ensure24(lst, key){
 router.get('/mentions/:identifier',  async function (req, res, next) {
     const now = new Date(Date.now());
     let oneday = new Date(now - 1000 * 60 * 60 * 24); // subtract one day
+    const ident = req.params['identifier'].toUpperCase();
     let q = Sentiment.aggregate()
-        .match({identifier: req.params['identifier'].toUpperCase(), timestamp: {$gte: oneday}})
+        .match({identifiers: {$elemMatch: {$eq: ident}}, timestamp: {$gte: oneday}})
+        .unwind('$identifiers')
+        .match({identifiers: ident})
         .group({
             _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
             mentions: {$sum: 1}
@@ -47,8 +50,11 @@ router.get('/mentions/:identifier',  async function (req, res, next) {
 router.get('/sentiment/:identifier',async function(req, res, next){
     const now = new Date(Date.now());
     let oneday = new Date(now - 1000 * 60 * 60 * 24); // subtract one day
+    const ident = req.params['identifier'].toUpperCase();
     let q = Sentiment.aggregate()
-        .match({identifier: req.params['identifier'].toUpperCase(), timestamp: {$gte: oneday}})
+        .match({identifiers: {$elemMatch: {$eq: ident}}, timestamp: {$gte: oneday}})
+        .unwind('$identifiers')
+        .match({identifiers: ident})
         .group({
             _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
             sentiment: {$avg: "$sentiment"}
@@ -70,8 +76,11 @@ router.get('/sentiment/:identifier',async function(req, res, next){
 router.get('/interactions/:identifier', async function(req, res, next){
     const now = new Date(Date.now());
     let oneday = new Date(now - 1000 * 60 * 60 * 24); // subtract one day
+    const ident = req.params['identifier'].toUpperCase();
     let q = Sentiment.aggregate()
-        .match({identifier: req.params['identifier'].toUpperCase(), timestamp: {$gte: oneday}})
+        .match({identifiers: {$elemMatch: {$eq: ident}}, timestamp: {$gte: oneday}})
+        .unwind('$identifiers')
+        .match({identifiers: ident})
         .group({
             _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
             interactions: {$sum: "$interaction"}
