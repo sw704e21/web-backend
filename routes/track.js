@@ -1,15 +1,15 @@
 let express = require('express');
 let router = express.Router();
-const cors = require("cors");
-const Coin = require("../models/Coin");
-const app = require("../app");
-const {spawn} = require("child_process");
+const {Coin} = require("../models/Coin");
 const apikey = "dfb9d16f-b1ed-41cc-ab52-1a2384dfd566";
 const https = require('https');
+const {Kafka} = require('kafkajs');
+const server = "104.41.213.247:9092";
+const topic = "CoinsToTrack";
 
 
-router.get('/', cors(app.corsOptions), async function (req, res, next) {
-    let q = Coin.Coin.find({});
+router.get('/', async function (req, res, next) {
+    let q = Coin.find({});
     await q.exec(function (err, result){
         if(err){
             next(err);
@@ -22,13 +22,13 @@ router.get('/', cors(app.corsOptions), async function (req, res, next) {
     });
 });
 
-router.post('/', cors(app.corsOptions), async function(req, res, next){
+router.post('/', async function(req, res, next){
     let body = req.body;
     let name = body['name'].toLowerCase();
     body['name'] = name;
     let identifier = body['identifier'].toUpperCase();
     body['identifier'] = identifier;
-    let q = Coin.Coin.find({$or: [{name: name}, {identifier: identifier}]});
+    let q = Coin.find({$or: [{name: name}, {identifier: identifier}]});
     await q.exec(async function (err, result) {
         if (err) {
             res.status(500)
@@ -58,29 +58,27 @@ router.post('/', cors(app.corsOptions), async function(req, res, next){
                     response.on('data', async (data) => {
                         data = JSON.parse(data);
                         body['icon'] = data['webp32'];
-                        await Coin.Coin.create(body, function (err, obj, next) {
+                        await Coin.create(body, async function (err, obj, next) {
                             if (err) {
                                 next(err);
                             } else {
 
-
-                                const ls = spawn('python3', [app.crawlerPath + 'src/add_subreddit.py', name])
-                                ls.stdout.on('data', (data) => {
-                                    console.log(`stdout: ${data}`);
+                                let tosend = [];
+                                body.tags.forEach((item) => {
+                                    tosend.push({value: item})
                                 });
 
-                                ls.stderr.on('data', (data) => {
-                                    console.log(`stderr: ${data}`);
+                                const kafka = new Kafka({clientId: 'Tag-producer', brokers: [server]});
+                                const producer = kafka.producer();
+
+                                await producer.connect();
+                                await producer.send({
+                                    topic: topic,
+                                    messages: tosend
                                 });
-
-                                ls.on('close', (code) => {
-                                    console.log(`child proccess exited with code ${code}`)
-                                })
-
-
-                                // Start script in crawler
-                                res.status(201)
-                                res.send(obj)
+                                await producer.disconnect();
+                                res.status(201);
+                                res.send(obj);
                             }
                         })
                     })
@@ -97,7 +95,7 @@ router.post('/', cors(app.corsOptions), async function(req, res, next){
     });
 });
 
-router.put('/:id', cors(app.corsOptions), async function(req, res,next) {
+router.put('/:id', async function(req, res,next) {
     let body = req.body;
     let postData = JSON.stringify({
         currency: 'USD',
@@ -119,7 +117,7 @@ router.put('/:id', cors(app.corsOptions), async function(req, res,next) {
             data = JSON.parse(data);
             body['icon'] = data['webp32'];
 
-            let q = Coin.Coin.replaceOne({_id: req.params['id']},body);
+            let q = Coin.replaceOne({_id: req.params['id']},body);
             const result = await q.exec();
             if (result.acknowledged) {
                 res.status(200);
@@ -142,9 +140,9 @@ router.put('/:id', cors(app.corsOptions), async function(req, res,next) {
 
 })
 
-router.delete('/:id', cors(app.corsOptions), async function (req, res, next) {
+router.delete('/:id', async function (req, res, next) {
     const id = req.params['id'];
-    let q = Coin.Coin.find({_id: id});
+    let q = Coin.find({_id: id});
     await q.exec(async function (err, result) {
         if (err) {
             next(err);
@@ -156,14 +154,52 @@ router.delete('/:id', cors(app.corsOptions), async function (req, res, next) {
                 res.status(500);
                 next();
             } else {
-                let del = await Coin.Coin.remove({_id: id}).exec()
+                let del = await Coin.remove({_id: id}).exec()
                 res.status(200);
                 res.send('Successfully deleted ' + del.deletedCount + " objects");
             }
         }
     });
-})
+});
 
+router.get('/start', async function(req, res, next){
+   let q =  Coin.find().select({tags: 1});
+   await q.exec(async function (err, result) {
+       if (err) {
+           next(err);
+       } else {
+           let tosend = [];
+           result.forEach((coin) => {
+               coin.tags.forEach((tag) =>{
+                   tosend.push({value: tag});
+               });
+           });
+           const kafka = new Kafka({clientId: 'Tag-producer', brokers: [server]});
+           const producer = kafka.producer();
+           await producer.connect();
+           await producer.send({
+               topic: topic,
+               messages: tosend
+           });
+           await producer.disconnect();
+
+           res.status(200);
+           res.send("Sent tags to crawler");
+       }
+   });
+});
+
+router.get('/tags', async function(req, res, next){
+    let q = Coin.find().select({identifier: 1, tags: 1});
+    await q.exec(function(err, result){
+       if(err){
+           next(err);
+       } else{
+           res.status(200);
+           res.send(result);
+       }
+    });
+})
 
 
 module.exports = router;
