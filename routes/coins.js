@@ -1,13 +1,13 @@
 let express = require('express');
 let router = express.Router();
-let Sentiment = require('../models/Sentiment');
-let Coin = require('../models/Coin');
+let {Sentiment} = require('../models/Sentiment');
+let {Coin} = require('../models/Coin');
 let app = require('../app');
 let cors = require('cors');
-let Score = require('../models/Score')
+let {Score} = require('../models/Score')
 
 router.get('/all/names', cors(app.corsOptions), async function(req, res, next){
-    let q = Coin.Coin.find();
+    let q = Coin.find();
     await q.exec(function(err, result){
         if(err){
             next(err);
@@ -27,7 +27,7 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
     console.log(sortParam)
     let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
     let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
-    let q = Sentiment.Sentiment.aggregate()
+    let q = Sentiment.aggregate()
         .match({timestamp: {$gte: twoday}})
         .unwind('$identifiers')
         .group({
@@ -130,7 +130,7 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
         if (err) {
             next(err)
         } else {
-            let r = Coin.Coin.find();
+            let r = Coin.find();
             await r.exec(async function(err, nameres){
                 if(err){
                     next(err);
@@ -175,7 +175,7 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
 router.get('/search/:identifier', cors(app.corsOptions), async function(req, res, next){
     let query = req.params.identifier.toUpperCase();
     let regex = new RegExp(query, 'i');
-    let q = Coin.Coin.find()
+    let q = Coin.find()
     .or([{ identifier: regex}, { display_name: regex }])
     .select({icon: 1, identifier: 1, display_name: 1, _id: 0});
     await q.exec(function(err, result){
@@ -192,7 +192,7 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
     let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
     let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
     const ident = req.params['identifier'].toUpperCase();
-    let q = Sentiment.Sentiment.aggregate()
+    let q = Sentiment.aggregate()
         .match({identifiers: {$elemMatch: {$eq: ident}} ,timestamp: {$gte: twoday}})
         .unwind('$identifiers')
         .group({
@@ -299,7 +299,7 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
                 res.send(`${req.params['identifier'].toUpperCase()} not found`);
             } else {
                 let send = result[0]
-                let r = Coin.Coin.findOne({identifier: send['identifier']});
+                let r = Coin.findOne({identifier: send['identifier']});
                 await r.exec(async function (err, fresult) {
                     if (err) {
                         next(err);
@@ -335,7 +335,7 @@ router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res
     let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * age);
     let now = new Date(Date.now());
     const ident = req.params['identifier'].toUpperCase();
-    let q = Sentiment.Sentiment.aggregate()
+    let q = Sentiment.aggregate()
         .match({identifiers: {$elemMatch: {$eq: ident}}, timestamp: {$gte: date}})
         .unwind('$identifiers')
         .match({identifiers: ident})
@@ -403,7 +403,7 @@ router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res
 });
 
 router.patch('/:url?:interactions?', cors(app.corsOptions), async function (req, res, next) {
-   let q = Sentiment.Sentiment.updateOne({url: req.query.url}, {interaction: req.query.interactions});
+   let q = Sentiment.updateOne({url: req.query.url}, {interaction: req.query.interactions});
    await q.exec(function(err, result) {
        if (err) {
            next(err);
@@ -435,7 +435,7 @@ router.patch('/:url?:interactions?', cors(app.corsOptions), async function (req,
 router.post('/', cors(app.corsOptions), async function (req, res, next) {
     let body = req.body;
     const ident = body['identifiers'];
-    let q = Coin.Coin.find({identifier: {$in: ident}});
+    let q = Coin.find({identifier: {$in: ident}});
     await q.exec(async function (err, result) {
         if (err) {
             next(err);
@@ -444,7 +444,7 @@ router.post('/', cors(app.corsOptions), async function (req, res, next) {
                 res.status(404);
                 res.send('Not tracking coin with identifier ' + ident);
             } else {
-                let e = Sentiment.Sentiment.find({url: body['url']});
+                let e = Sentiment.find({url: body['url']});
                 await e.exec(async function (err, result) {
                     if (err) {
                         next(err);
@@ -453,7 +453,7 @@ router.post('/', cors(app.corsOptions), async function (req, res, next) {
                             res.status(403);
                             res.send("Post with url already exists: " + body['url']);
                         } else {
-                            await Sentiment.Sentiment.create(body, function (err, obj, next) {
+                            await Sentiment.create(body, function (err, obj, next) {
                                 if (err) {
                                     next(err);
                                 } else {

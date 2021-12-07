@@ -1,7 +1,7 @@
 let express = require('express');
 let router = express.Router();
 const cors = require("cors");
-const Coin = require("../models/Coin");
+const {Coin} = require("../models/Coin");
 const app = require("../app");
 const apikey = "dfb9d16f-b1ed-41cc-ab52-1a2384dfd566";
 const https = require('https');
@@ -11,7 +11,7 @@ const topic = "CoinsToTrack";
 
 
 router.get('/', cors(app.corsOptions), async function (req, res, next) {
-    let q = Coin.Coin.find({});
+    let q = Coin.find({});
     await q.exec(function (err, result){
         if(err){
             next(err);
@@ -30,7 +30,7 @@ router.post('/', cors(app.corsOptions), async function(req, res, next){
     body['name'] = name;
     let identifier = body['identifier'].toUpperCase();
     body['identifier'] = identifier;
-    let q = Coin.Coin.find({$or: [{name: name}, {identifier: identifier}]});
+    let q = Coin.find({$or: [{name: name}, {identifier: identifier}]});
     await q.exec(async function (err, result) {
         if (err) {
             res.status(500)
@@ -60,7 +60,7 @@ router.post('/', cors(app.corsOptions), async function(req, res, next){
                     response.on('data', async (data) => {
                         data = JSON.parse(data);
                         body['icon'] = data['webp32'];
-                        await Coin.Coin.create(body, async function (err, obj, next) {
+                        await Coin.create(body, async function (err, obj, next) {
                             if (err) {
                                 next(err);
                             } else {
@@ -119,7 +119,7 @@ router.put('/:id', cors(app.corsOptions), async function(req, res,next) {
             data = JSON.parse(data);
             body['icon'] = data['webp32'];
 
-            let q = Coin.Coin.replaceOne({_id: req.params['id']},body);
+            let q = Coin.replaceOne({_id: req.params['id']},body);
             const result = await q.exec();
             if (result.acknowledged) {
                 res.status(200);
@@ -144,7 +144,7 @@ router.put('/:id', cors(app.corsOptions), async function(req, res,next) {
 
 router.delete('/:id', cors(app.corsOptions), async function (req, res, next) {
     const id = req.params['id'];
-    let q = Coin.Coin.find({_id: id});
+    let q = Coin.find({_id: id});
     await q.exec(async function (err, result) {
         if (err) {
             next(err);
@@ -156,7 +156,7 @@ router.delete('/:id', cors(app.corsOptions), async function (req, res, next) {
                 res.status(500);
                 next();
             } else {
-                let del = await Coin.Coin.remove({_id: id}).exec()
+                let del = await Coin.remove({_id: id}).exec()
                 res.status(200);
                 res.send('Successfully deleted ' + del.deletedCount + " objects");
             }
@@ -165,7 +165,7 @@ router.delete('/:id', cors(app.corsOptions), async function (req, res, next) {
 });
 
 router.get('/start', cors(app.corsOptions), async function(req, res, next){
-   let q =  Coin.Coin.find().select({tags: 1});
+   let q =  Coin.find().select({tags: 1});
    await q.exec(async function (err, result) {
        if (err) {
            next(err);
@@ -192,7 +192,7 @@ router.get('/start', cors(app.corsOptions), async function(req, res, next){
 });
 
 router.get('/tags', cors(app.corsOptions), async function(req, res, next){
-    let q = Coin.Coin.find().select({identifier: 1, tags: 1});
+    let q = Coin.find().select({identifier: 1, tags: 1});
     await q.exec(function(err, result){
        if(err){
            next(err);

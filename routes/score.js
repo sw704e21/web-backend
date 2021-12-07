@@ -2,10 +2,10 @@ let express = require('express');
 let router = express.Router();
 let app = require('../app');
 let cors = require('cors');
-let Sentiment = require('../models/Sentiment');
-let Price = require('../models/Price');
-const Coin = require("../models/Coin");
-let Score = require('../models/Score');
+let {Sentiment} = require('../models/Sentiment');
+let {Price} = require('../models/Price');
+const {Coin} = require("../models/Coin");
+let {Score} = require('../models/Score');
 
 function ensure24(lst, key){
     let send = [];
@@ -28,7 +28,7 @@ function ensure24(lst, key){
 router.get('/mentions/:identifier', cors(app.corsOptions), async function (req, res, next) {
     const now = new Date(Date.now());
     let oneday = new Date(now - 1000 * 60 * 60 * 24); // subtract one day
-    let q = Sentiment.Sentiment.aggregate()
+    let q = Sentiment.aggregate()
         .match({identifier: req.params['identifier'].toUpperCase(), timestamp: {$gte: oneday}})
         .group({
             _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
@@ -49,7 +49,7 @@ router.get('/mentions/:identifier', cors(app.corsOptions), async function (req, 
 router.get('/sentiment/:identifier', cors(app.corsOptions), async function(req, res, next){
     const now = new Date(Date.now());
     let oneday = new Date(now - 1000 * 60 * 60 * 24); // subtract one day
-    let q = Sentiment.Sentiment.aggregate()
+    let q = Sentiment.aggregate()
         .match({identifier: req.params['identifier'].toUpperCase(), timestamp: {$gte: oneday}})
         .group({
             _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
@@ -72,7 +72,7 @@ router.get('/sentiment/:identifier', cors(app.corsOptions), async function(req, 
 router.get('/interactions/:identifier', cors(app.corsOptions), async function(req, res, next){
     const now = new Date(Date.now());
     let oneday = new Date(now - 1000 * 60 * 60 * 24); // subtract one day
-    let q = Sentiment.Sentiment.aggregate()
+    let q = Sentiment.aggregate()
         .match({identifier: req.params['identifier'].toUpperCase(), timestamp: {$gte: oneday}})
         .group({
             _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
@@ -91,7 +91,7 @@ router.get('/interactions/:identifier', cors(app.corsOptions), async function(re
 });
 
 router.get('/price/:identifier', cors(app.corsOptions), async function(req, res, next){
-    let q = Price.Price.find({identifier: req.params['identifier'].toUpperCase()});
+    let q = Price.find({identifier: req.params['identifier'].toUpperCase()});
     await q.exec(function(err, result) {
         if(err){
             next(err);
@@ -112,7 +112,7 @@ router.get('/price/:identifier', cors(app.corsOptions), async function(req, res,
 
 router.post('/', cors(app.corsOptions), async function (req, res, next){
     let body = req.body;
-    let q = Coin.Coin.findOne({identifier: body.identifier});
+    let q = Coin.findOne({identifier: body.identifier});
     await q.exec(async function (error,result) {
         if (error){
             next(error)
@@ -120,7 +120,7 @@ router.post('/', cors(app.corsOptions), async function (req, res, next){
         else{
             if (result){
                 body.timestamp = new Date(Date.now());
-                await Score.Score.create(body, function (err, obj) {
+                await Score.create(body, function (err, obj) {
                     if (err) {
                         next(err);
                     } else {
@@ -139,7 +139,7 @@ router.post('/', cors(app.corsOptions), async function (req, res, next){
 })
 
 router.get('/all', cors(app.corsOptions), async function(req, res, next){
-    let q = Score.Score.find();
+    let q = Score.find();
     await q.exec(function(err, result){
         if(err){
             next(err)
@@ -158,7 +158,7 @@ router.get('/all', cors(app.corsOptions), async function(req, res, next){
 })
 
 router.get('/:identifier', cors(app.corsOptions), async function(req, res, next){
-    let q = Score.Score.find({identifier: req.params['identifier']});
+    let q = Score.find({identifier: req.params['identifier']});
     await q.exec(function(err, result){
         if(err){
             next(err)

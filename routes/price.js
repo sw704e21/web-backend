@@ -1,12 +1,12 @@
 let express = require('express');
 let router = express.Router();
 let app = require('../app');
-let Price = require('../models/Price');
-let Coin = require('../models/Coin');
+let {Price} = require('../models/Price');
+let {Coin} = require('../models/Coin');
 const cors = require("cors");
 
 router.get('/', cors(app.corsOptions), async function(req, res, next){
-    let q = Price.Price.find();
+    let q = Price.find();
     await q.exec(function(err, result) {
         if(err){
             next(err);
@@ -20,7 +20,7 @@ router.get('/', cors(app.corsOptions), async function(req, res, next){
 
 router.post('/', cors(app.corsOptions), async function(req, res, next){
     let body = req.body;
-    let q = Coin.Coin.findOne({identifier: body['identifier']});
+    let q = Coin.findOne({identifier: body['identifier']});
     await q.exec(async function (err, result){
         if (err){
             next(err);
@@ -29,11 +29,11 @@ router.post('/', cors(app.corsOptions), async function(req, res, next){
                 if(!body['timestamp']){
                     body['timestamp'] = Date.now();
                 }
-                await Price.Price.create(body, async function (err, obj) {
+                await Price.create(body, async function (err, obj) {
                     if (err) {
                         next(err);
                     } else {
-                        let r = Price.Price.find({identifier: body['identifier']});
+                        let r = Price.find({identifier: body['identifier']});
                         await r.exec(async function (err, result) {
                             if (err) {
                                 next(err);
@@ -44,7 +44,7 @@ router.post('/', cors(app.corsOptions), async function(req, res, next){
                                             return a['timestamp'] > b['timestamp'] ? 1 :
                                                 b['timestamp'] > a['timestamp'] ? -1 : 0
                                         })[0];
-                                    let s = Price.Price.deleteOne({_id: old['_id']});
+                                    let s = Price.deleteOne({_id: old['_id']});
                                     await s.exec(function (err, result) {
                                         if(err){
                                             next(err);
@@ -77,7 +77,7 @@ router.post('/', cors(app.corsOptions), async function(req, res, next){
 });
 
 router.patch('/:identifier/:price', cors(app.corsOptions), async function(req, res, next) {
-    let q = Coin.Coin.updateOne({identifier: req.params['identifier']}, {price: req.params['price']});
+    let q = Coin.updateOne({identifier: req.params['identifier']}, {price: req.params['price']});
     await q.exec(function(err, result){
         if(err) {
             next(err);

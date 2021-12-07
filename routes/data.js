@@ -2,9 +2,9 @@ let express = require('express');
 let router = express.Router();
 let app = require('../app');
 let cors = require('cors');
-let Sentiment = require('../models/Sentiment');
-let TFdict = require('../models/tf-dict');
-let Coin = require('../models/Coin');
+let {Sentiment} = require('../models/Sentiment');
+let {TFdict} = require('../models/tf-dict');
+let {Coin} = require('../models/Coin');
 const {Kafka} = require('kafkajs');
 const server = "104.41.213.247:9092";
 const topic = "PostsToProcess";
@@ -12,7 +12,7 @@ const topic = "PostsToProcess";
 router.post('/', cors(app.corsOptions), async function (req, res, next) {
     const body = req.body;
     console.log(body)
-    let q = Sentiment.Sentiment.find({url: body['url']});
+    let q = Sentiment.find({url: body['url']});
     await q.exec(async function (err, result) {
         if (err) {
             next(err);
@@ -43,20 +43,20 @@ router.post('/', cors(app.corsOptions), async function (req, res, next) {
 router.post('/tfdict/:name', cors(app.corsOptions), async function(req, res, next){
     let dict = req.body;
     let n = req.params['name'];
-    let q = Coin.Coin.findOne({name: n});
+    let q = Coin.findOne({name: n});
     await q.exec(async function(err, result){
        if(err){
            next(err);
        } else{
            if (result) {
                const ident = result['identifier'];
-               let r = TFdict.TFdict.findOne({identifier: ident});
+               let r = TFdict.findOne({identifier: ident});
                await r.exec(async function (err, result) {
                    if (err) {
                        next(err);
                    } else {
                        if (result) {
-                           let s = TFdict.TFdict.updateOne({identifier: ident}, {TFdict: dict});
+                           let s = TFdict.updateOne({identifier: ident}, {TFdict: dict});
                            await s.exec(function (err, update) {
                                if (err) {
                                    next(err);
@@ -71,7 +71,7 @@ router.post('/tfdict/:name', cors(app.corsOptions), async function(req, res, nex
                                }
                            });
                        } else {
-                           await TFdict.TFdict.create({identifier: ident, TFdict: dict}, function (err, create) {
+                           await TFdict.create({identifier: ident, TFdict: dict}, function (err, create) {
                                if (err) {
                                    next(err);
                                } else {
@@ -92,7 +92,7 @@ router.post('/tfdict/:name', cors(app.corsOptions), async function(req, res, nex
 
 router.get('/tfdict/:identifier', cors(app.corsOptions), async function(req, res, next){
     const ident = req.params['identifier'].toUpperCase();
-    let q = TFdict.TFdict.findOne({identifier: ident});
+    let q = TFdict.findOne({identifier: ident});
     await q.exec(function (err, result){
        if(err){
            next(err);

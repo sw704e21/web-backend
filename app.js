@@ -7,7 +7,6 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser').json()
 
 const indexRouter = require('./routes/index');
-const usersRouter = require('./routes/users');
 const coinsRouter = require('./routes/coins');
 const testsRouter = require('./routes/test');
 const dataRouter = require('./routes/data');
@@ -27,7 +26,6 @@ app.use(bodyParser);
 
 
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
 app.use('/coins', coinsRouter);
 app.use('/test', testsRouter);
 app.use('/data', dataRouter);
