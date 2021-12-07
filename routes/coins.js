@@ -399,15 +399,15 @@ router.get('/:identifier/:age?', async function (req, res, next) {
     })
 });
 
-router.patch('/:url?:interactions?',  async function (req, res, next) {
-   let q = Sentiment.updateOne({url: req.query.url}, {interaction: req.query.interactions});
+router.patch('/:uuid?:interactions?',  async function (req, res, next) {
+   let q = Sentiment.updateOne({uuid: req.query.uuid}, {interaction: req.query.interactions});
    await q.exec(function(err, result) {
        if (err) {
            next(err);
        }else{
            if(result.matchedCount === 0){
                res.status(404)
-               res.send(`${req.query.url} not found!`)
+               res.send(`${req.query.uuid} not found!`)
            }
            else if(result.matchedCount < 1){
                res.status(200)
@@ -416,17 +416,15 @@ router.patch('/:url?:interactions?',  async function (req, res, next) {
            else {
                if(result.acknowledged){
                    res.status(200)
-                   res.send(`Sentiment of post ${req.query.url} updated to ${req.query.interactions}`)
+                   res.send(`Sentiment of post ${req.query.uuid} updated to ${req.query.interactions}`)
                }
                else{
                    res.status(500)
                    res.send("An unknown database error occurred")
                }
-
            }
        }
    })
-
 });
 
 router.post('/', async function (req, res, next) {
@@ -441,14 +439,14 @@ router.post('/', async function (req, res, next) {
                 res.status(404);
                 res.send('Not tracking coin with identifier ' + ident);
             } else {
-                let e = Sentiment.find({url: body['url']});
+                let e = Sentiment.find({uuid: body['uuid']});
                 await e.exec(async function (err, result) {
                     if (err) {
                         next(err);
                     } else {
                         if (result.length > 0) {
                             res.status(403);
-                            res.send("Post with url already exists: " + body['url']);
+                            res.send("Post with uuid already exists: " + body['uuid']);
                         } else {
                             await Sentiment.create(body, function (err, obj, next) {
                                 if (err) {
@@ -457,7 +455,7 @@ router.post('/', async function (req, res, next) {
                                     res.status(201);
                                     res.send(obj);
                                 }
-                            })
+                            });
                         }
                     }
                 });

@@ -49,6 +49,27 @@ router.get('/unwind', async function(req, res, next){
     })
 });
 
+router.get('/uuids', async function(req, res, next){
+    let q = Sentiment.find({"$uuid": {$eq: ""} });
+    await q.exec(async function(err, result){
+        if(err){
+            next(err);
+        } else{
+            console.log(result.length);
+
+
+            for(const doc of result){
+                if(doc.url.includes("www.reddit.com") && doc.uuid === ""){
+                    const s = doc.url.split('/')
+                    await Sentiment.updateOne({_id: doc._id}, {uuid: s[6]}).exec();
+                }
+            }
+            res.status(200);
+            res.send();
+        }
+    })
+})
+
 router.get('/identifiers', async function (req, res, next) {
     let q = Sentiment.find({"identifiers.0": {$exists: false} });
     await q.exec(async function (err, result) {
