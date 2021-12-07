@@ -1,7 +1,5 @@
 let express = require('express');
 let router = express.Router();
-let app = require('../app');
-let cors = require('cors');
 let {Sentiment} = require('../models/Sentiment');
 let {Price} = require('../models/Price');
 const {Coin} = require("../models/Coin");
@@ -25,7 +23,7 @@ function ensure24(lst, key){
     return send;
 }
 
-router.get('/mentions/:identifier', cors(app.corsOptions), async function (req, res, next) {
+router.get('/mentions/:identifier',  async function (req, res, next) {
     const now = new Date(Date.now());
     let oneday = new Date(now - 1000 * 60 * 60 * 24); // subtract one day
     let q = Sentiment.aggregate()
@@ -46,7 +44,7 @@ router.get('/mentions/:identifier', cors(app.corsOptions), async function (req, 
     });
 });
 
-router.get('/sentiment/:identifier', cors(app.corsOptions), async function(req, res, next){
+router.get('/sentiment/:identifier',async function(req, res, next){
     const now = new Date(Date.now());
     let oneday = new Date(now - 1000 * 60 * 60 * 24); // subtract one day
     let q = Sentiment.aggregate()
@@ -69,7 +67,7 @@ router.get('/sentiment/:identifier', cors(app.corsOptions), async function(req, 
     });
 });
 
-router.get('/interactions/:identifier', cors(app.corsOptions), async function(req, res, next){
+router.get('/interactions/:identifier', async function(req, res, next){
     const now = new Date(Date.now());
     let oneday = new Date(now - 1000 * 60 * 60 * 24); // subtract one day
     let q = Sentiment.aggregate()
@@ -90,7 +88,7 @@ router.get('/interactions/:identifier', cors(app.corsOptions), async function(re
     });
 });
 
-router.get('/price/:identifier', cors(app.corsOptions), async function(req, res, next){
+router.get('/price/:identifier', async function(req, res, next){
     let q = Price.find({identifier: req.params['identifier'].toUpperCase()});
     await q.exec(function(err, result) {
         if(err){
@@ -110,7 +108,7 @@ router.get('/price/:identifier', cors(app.corsOptions), async function(req, res,
     });
 });
 
-router.post('/', cors(app.corsOptions), async function (req, res, next){
+router.post('/', async function (req, res, next){
     let body = req.body;
     let q = Coin.findOne({identifier: body.identifier});
     await q.exec(async function (error,result) {
@@ -138,7 +136,7 @@ router.post('/', cors(app.corsOptions), async function (req, res, next){
 
 })
 
-router.get('/all', cors(app.corsOptions), async function(req, res, next){
+router.get('/all',async function(req, res, next){
     let q = Score.find();
     await q.exec(function(err, result){
         if(err){
@@ -157,7 +155,7 @@ router.get('/all', cors(app.corsOptions), async function(req, res, next){
     })
 })
 
-router.get('/:identifier', cors(app.corsOptions), async function(req, res, next){
+router.get('/:identifier', async function(req, res, next){
     let q = Score.find({identifier: req.params['identifier']});
     await q.exec(function(err, result){
         if(err){

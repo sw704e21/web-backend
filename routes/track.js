@@ -1,8 +1,6 @@
 let express = require('express');
 let router = express.Router();
-const cors = require("cors");
 const {Coin} = require("../models/Coin");
-const app = require("../app");
 const apikey = "dfb9d16f-b1ed-41cc-ab52-1a2384dfd566";
 const https = require('https');
 const {Kafka} = require('kafkajs');
@@ -10,7 +8,7 @@ const server = "104.41.213.247:9092";
 const topic = "CoinsToTrack";
 
 
-router.get('/', cors(app.corsOptions), async function (req, res, next) {
+router.get('/', async function (req, res, next) {
     let q = Coin.find({});
     await q.exec(function (err, result){
         if(err){
@@ -24,7 +22,7 @@ router.get('/', cors(app.corsOptions), async function (req, res, next) {
     });
 });
 
-router.post('/', cors(app.corsOptions), async function(req, res, next){
+router.post('/', async function(req, res, next){
     let body = req.body;
     let name = body['name'].toLowerCase();
     body['name'] = name;
@@ -97,7 +95,7 @@ router.post('/', cors(app.corsOptions), async function(req, res, next){
     });
 });
 
-router.put('/:id', cors(app.corsOptions), async function(req, res,next) {
+router.put('/:id', async function(req, res,next) {
     let body = req.body;
     let postData = JSON.stringify({
         currency: 'USD',
@@ -142,7 +140,7 @@ router.put('/:id', cors(app.corsOptions), async function(req, res,next) {
 
 })
 
-router.delete('/:id', cors(app.corsOptions), async function (req, res, next) {
+router.delete('/:id', async function (req, res, next) {
     const id = req.params['id'];
     let q = Coin.find({_id: id});
     await q.exec(async function (err, result) {
@@ -164,7 +162,7 @@ router.delete('/:id', cors(app.corsOptions), async function (req, res, next) {
     });
 });
 
-router.get('/start', cors(app.corsOptions), async function(req, res, next){
+router.get('/start', async function(req, res, next){
    let q =  Coin.find().select({tags: 1});
    await q.exec(async function (err, result) {
        if (err) {
@@ -191,7 +189,7 @@ router.get('/start', cors(app.corsOptions), async function(req, res, next){
    });
 });
 
-router.get('/tags', cors(app.corsOptions), async function(req, res, next){
+router.get('/tags', async function(req, res, next){
     let q = Coin.find().select({identifier: 1, tags: 1});
     await q.exec(function(err, result){
        if(err){

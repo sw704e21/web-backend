@@ -1,7 +1,5 @@
 let express = require('express');
 let router = express.Router();
-let app = require('../app');
-let cors = require('cors');
 let {Sentiment} = require('../models/Sentiment');
 let {TFdict} = require('../models/tf-dict');
 let {Coin} = require('../models/Coin');
@@ -9,7 +7,7 @@ const {Kafka} = require('kafkajs');
 const server = "104.41.213.247:9092";
 const topic = "PostsToProcess";
 
-router.post('/', cors(app.corsOptions), async function (req, res, next) {
+router.post('/', async function (req, res, next) {
     const body = req.body;
     console.log(body)
     let q = Sentiment.find({url: body['url']});
@@ -40,7 +38,7 @@ router.post('/', cors(app.corsOptions), async function (req, res, next) {
 
 });
 
-router.post('/tfdict/:name', cors(app.corsOptions), async function(req, res, next){
+router.post('/tfdict/:name', async function(req, res, next){
     let dict = req.body;
     let n = req.params['name'];
     let q = Coin.findOne({name: n});
@@ -90,7 +88,7 @@ router.post('/tfdict/:name', cors(app.corsOptions), async function(req, res, nex
     });
 });
 
-router.get('/tfdict/:identifier', cors(app.corsOptions), async function(req, res, next){
+router.get('/tfdict/:identifier', async function(req, res, next){
     const ident = req.params['identifier'].toUpperCase();
     let q = TFdict.findOne({identifier: ident});
     await q.exec(function (err, result){

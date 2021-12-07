@@ -1,11 +1,9 @@
 let express = require('express');
 let router = express.Router();
-let app = require('../app');
 let {Price} = require('../models/Price');
 let {Coin} = require('../models/Coin');
-const cors = require("cors");
 
-router.get('/', cors(app.corsOptions), async function(req, res, next){
+router.get('/', async function(req, res, next){
     let q = Price.find();
     await q.exec(function(err, result) {
         if(err){
@@ -18,7 +16,7 @@ router.get('/', cors(app.corsOptions), async function(req, res, next){
 });
 
 
-router.post('/', cors(app.corsOptions), async function(req, res, next){
+router.post('/', async function(req, res, next){
     let body = req.body;
     let q = Coin.findOne({identifier: body['identifier']});
     await q.exec(async function (err, result){
@@ -76,7 +74,7 @@ router.post('/', cors(app.corsOptions), async function(req, res, next){
     });
 });
 
-router.patch('/:identifier/:price', cors(app.corsOptions), async function(req, res, next) {
+router.patch('/:identifier/:price', async function(req, res, next) {
     let q = Coin.updateOne({identifier: req.params['identifier']}, {price: req.params['price']});
     await q.exec(function(err, result){
         if(err) {

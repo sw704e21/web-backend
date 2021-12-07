@@ -4,7 +4,8 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const mongoose = require('mongoose');
-const bodyParser = require('body-parser').json()
+const bodyParser = require('body-parser').json();
+const cors = require('cors');
 
 const indexRouter = require('./routes/index');
 const coinsRouter = require('./routes/coins');
@@ -73,7 +74,7 @@ db.once("open", function () {
 //Listen on port 3000
 app.listen(3001, () => {
   console.log("Server is running on port 3000");
-})
+});
 
 var dir = __dirname;
 module.exports.serverPath = dir.substr(0, dir.length -'web-backend/'.length) + "/server-backend/"
@@ -84,7 +85,9 @@ const corsOptions = {
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     preflightContinue: false,
     optionsSuccessStatus: 204
-}
+};
+
+app.options('*', cors(corsOptions));
 
 module.exports.corsOptions = corsOptions;
 

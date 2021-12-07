@@ -2,11 +2,9 @@ let express = require('express');
 let router = express.Router();
 let {Sentiment} = require('../models/Sentiment');
 let {Coin} = require('../models/Coin');
-let app = require('../app');
-let cors = require('cors');
 let {Score} = require('../models/Score')
 
-router.get('/all/names', cors(app.corsOptions), async function(req, res, next){
+router.get('/all/names', async function(req, res, next){
     let q = Coin.find();
     await q.exec(function(err, result){
         if(err){
@@ -22,9 +20,8 @@ router.get('/all/names', cors(app.corsOptions), async function(req, res, next){
     });
 });
 
-router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (req, res, next) {
+router.get('/all/:length?:sortParam?', async function (req, res, next) {
     let sortParam = req.query.sortParam; // put a minus in front if sort by descending
-    console.log(sortParam)
     let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
     let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
     let q = Sentiment.aggregate()
@@ -135,7 +132,7 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
                 if(err){
                     next(err);
                 }else{
-                    let s = Score.Score.find().sort("-timestamp");
+                    let s = Score.find().sort("-timestamp");
                     await s.exec(async function(err, scoreResult){
                         if(err){
                             next(err)
@@ -172,7 +169,7 @@ router.get('/all/:length?:sortParam?',cors(app.corsOptions) , async function (re
     });
 });
 
-router.get('/search/:identifier', cors(app.corsOptions), async function(req, res, next){
+router.get('/search/:identifier',  async function(req, res, next){
     let query = req.params.identifier.toUpperCase();
     let regex = new RegExp(query, 'i');
     let q = Coin.find()
@@ -188,7 +185,7 @@ router.get('/search/:identifier', cors(app.corsOptions), async function(req, res
     });
 });
 
-router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, next) {
+router.get('/:identifier/info', async function(req, res, next) {
     let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
     let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
     const ident = req.params['identifier'].toUpperCase();
@@ -304,7 +301,7 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
                     if (err) {
                         next(err);
                     } else {
-                        let s = Score.Score.find({identifier: send['identifier']}).sort('-timestamp').limit(1);
+                        let s = Score.find({identifier: send['identifier']}).sort('-timestamp').limit(1);
                         await s.exec(async function (err, scoreResult) {
                             if (err) {
                                 next(err)
@@ -330,7 +327,7 @@ router.get('/:identifier/info', cors(app.corsOptions), async function(req, res, 
     });
 });
 
-router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res, next) {
+router.get('/:identifier/:age?', async function (req, res, next) {
     const age = (req.query.age || 7)
     let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * age);
     let now = new Date(Date.now());
@@ -402,7 +399,7 @@ router.get('/:identifier/:age?', cors(app.corsOptions), async function (req, res
     })
 });
 
-router.patch('/:url?:interactions?', cors(app.corsOptions), async function (req, res, next) {
+router.patch('/:url?:interactions?',  async function (req, res, next) {
    let q = Sentiment.updateOne({url: req.query.url}, {interaction: req.query.interactions});
    await q.exec(function(err, result) {
        if (err) {
@@ -432,7 +429,7 @@ router.patch('/:url?:interactions?', cors(app.corsOptions), async function (req,
 
 });
 
-router.post('/', cors(app.corsOptions), async function (req, res, next) {
+router.post('/', async function (req, res, next) {
     let body = req.body;
     const ident = body['identifiers'];
     let q = Coin.find({identifier: {$in: ident}});
