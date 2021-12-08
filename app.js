@@ -14,6 +14,7 @@ const dataRouter = require('./routes/data');
 const trackRouter = require('./routes/track');
 const priceRouter = require('./routes/price');
 const scoreRouter = require('./routes/score');
+const sentRouter = require('./routes/sentiment');
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/data', dataRouter);
 app.use('/track', trackRouter);
 app.use('/price', priceRouter);
 app.use('/score', scoreRouter);
+app.use('/sentiment', sentRouter);
 
 
 // catch 404 and forward to error handler

@@ -7,7 +7,9 @@ const sentimentSchema = new mongoose.Schema({
     interaction: {type: Number, default: 1},
     url: {type: String, default: ''},
     identifier: {type: String},
-    influence: {type: Number, default: 1}
+    influence: {type: Number, default: 1},
+    uuid: {type: String, default: ''},
+    source: {type: String, default: 'reddit'}
 });
 
 module.exports.Sentiment = mongoose.model('Sentiment', sentimentSchema);
