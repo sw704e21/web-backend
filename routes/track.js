@@ -15,7 +15,6 @@ router.get('/', async function (req, res, next) {
             next(err);
         }
         else{
-            console.log(result);
             res.status(200);
             res.send(result);
         }
