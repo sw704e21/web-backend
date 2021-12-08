@@ -36,7 +36,7 @@ router.get('/tags', async function(req, res, next){
 router.get('/unwind', async function(req, res, next){
     let oneday = new Date(Date.now() - 1000 * 60 * 60 );
     let q = Sentiment.aggregate()
-        .match({timestamp: {$gte: oneday}})
+        .match({timestamp: {$gte: oneday}, identifiers: {$exists: true}})
         .unwind('$identifiers')
         .group({_id: "$identifiers", mentions: {$sum: 1}});
     await q.exec(function(err, result){
@@ -108,7 +108,7 @@ router.delete('/:coin',async function (req, res, next) {
 });
 
 router.get('/posts', async function (req, res, next) {
-    let q = Sentiment.find();
+    let q = Sentiment.find({identifiers: {$exists: true}});
     await q.exec(function (err, result) {
         if (err) {
             next(err);
