@@ -4,6 +4,7 @@ let {Sentiment} = require('../models/Sentiment');
 let {Coin} = require('../models/Coin');
 let {Score} = require('../models/Score')
 
+
 router.get('/all/names', async function(req, res, next){
     let q = Coin.find();
     await q.exec(function(err, result){

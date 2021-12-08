@@ -26,6 +26,15 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser);
 
+const corsOptions = {
+    origin: "*",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+};
+
+//app.options('*', cors(corsOptions));
+app.use(cors(corsOptions));
 
 app.use('/', indexRouter);
 app.use('/coins', coinsRouter);
@@ -82,15 +91,7 @@ var dir = __dirname;
 module.exports.serverPath = dir.substr(0, dir.length -'web-backend/'.length) + "/server-backend/"
 module.exports.crawlerPath = dir.substr(0, dir.length -'web-backend/'.length) + "/crawler/"
 
-const corsOptions = {
-    origin: "*",
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    preflightContinue: false,
-    optionsSuccessStatus: 204
-};
 
-//app.options('*', cors(corsOptions));
-app.use(cors(corsOptions));
 
 module.exports.corsOptions = corsOptions;
 
