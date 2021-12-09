@@ -11,7 +11,6 @@ router.get('/ids/reddit/:age?', async function(req, res, next){
             next(err);
         }else {
             let send = [];
-            console.log(result.length);
             result.forEach((item)=>{
                 send.push(item.uuid);
             });
