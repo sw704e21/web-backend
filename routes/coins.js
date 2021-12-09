@@ -437,6 +437,7 @@ router.post('/', async function (req, res, next) {
             next(err);
         } else {
             if (result.length === 0) {
+                console.log(`Could not find ${ident}`);
                 res.status(404);
                 res.send('Not tracking coin with identifier ' + ident);
             } else {
