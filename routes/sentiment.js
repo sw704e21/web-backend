@@ -5,7 +5,7 @@ let {Sentiment} = require('../models/Sentiment');
 router.get('/ids/reddit/:age?', async function(req, res, next){
     const age = (req.query.age || 1);
     let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * age);
-    let q = Sentiment.find({timestamp: {$gt: date}, "$source": 'reddit'}).select({uuid: 1});
+    let q = Sentiment.find({timestamp: {$gt: date}, source: {$eq: 'reddit'}}).select({uuid: 1});
     await q.exec(function(err, result){
         if(err){
             next(err);
@@ -24,7 +24,7 @@ router.get('/ids/reddit/:age?', async function(req, res, next){
 router.get('/ids/twitter/:age?', async function(req, res, next){
     const age = (req.query.age || 1);
     let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * age);
-    let q = Sentiment.find({timestamp: {$gt: date}, '$source': 'twitter'}).select({uuid: 1});
+    let q = Sentiment.find({timestamp: {$gt: date}, source: 'twitter'}).select({uuid: 1});
     await q.exec(function(err, result){
         if(err){
             next(err);
