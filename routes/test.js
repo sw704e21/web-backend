@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 const {Sentiment} = require("../models/Sentiment");
 const {Coin} = require("../models/Coin");
+const {TFdict} = require('../models/tf-dict');
 
 router.get('/mult', async function(req, res, next){
     const ids = req.body['identifiers'];
@@ -95,8 +96,8 @@ router.get('/date', function (req, res) {
 });
 
 
-router.delete('/:coin',async function (req, res, next) {
-    await Sentiment.remove({coin: req.params['coin']}).exec(function(err, delres) {
+router.delete('/sentiment',async function (req, res, next) {
+    await Sentiment.remove().exec(function(err, delres) {
         if(err) {
             next(err);
         } else {
@@ -104,7 +105,17 @@ router.delete('/:coin',async function (req, res, next) {
             res.send('Successfully deleted objects:' + delres.deletedCount);
         }
     });
+});
 
+router.delete('/tfdict',async function (req, res, next) {
+    await TFdict.remove().exec(function(err, delres) {
+        if(err) {
+            next(err);
+        } else {
+            res.status(200);
+            res.send('Successfully deleted objects:' + delres.deletedCount);
+        }
+    });
 });
 
 router.get('/posts', async function (req, res, next) {

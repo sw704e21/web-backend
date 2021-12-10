@@ -2,6 +2,7 @@ let express = require('express');
 let router = express.Router();
 let {Sentiment} = require('../models/Sentiment');
 let {TFdict} = require('../models/tf-dict');
+const {Coin} = require('../models/Coin');
 const {Kafka} = require('kafkajs');
 const server = "104.41.213.247:9092";
 const topic = "PostsToProcess";
@@ -38,51 +39,71 @@ router.post('/', async function (req, res, next) {
 
 router.post('/tfdict/:identifier', async function(req, res, next){
     let dict = req.body;
+    console.log(dict)
     let ident = req.params['identifier'];
-    let r = TFdict.findOne({identifier: ident});
+    let r = Coin.findOne({identifier: ident});
     await r.exec(async function (err, result) {
         if (err) {
             next(err);
         } else {
-            if (result) {
-                let s = TFdict.updateOne({identifier: ident}, {TFdict: dict});
-                await s.exec(function (err, update) {
-                    if (err) {
-                        next(err);
-                    } else {
-                        if (update.acknowledged) {
-                            res.status(200);
-                            res.send(`TFdict for ${ident} updated`);
-                        } else {
-                            res.status(500);
-                            res.send(`An unknown error occurred when updating the TFdict for ${ident}`);
-                        }
-                    }
-                });
-            } else {
-                await TFdict.create({identifier: ident, TFdict: dict}, function (err, create) {
-                    if (err) {
-                        next(err);
-                    } else {
-                        res.status(201);
-                        res.send(`Created TFdict for ${create['identifier']}`);
-                    }
-                });
+            if(result){
+                let success = true;
+                for(const [key, value] of Object.entries(dict.words)){
+                    let q = TFdict.findOne({identifier: ident, word: key});
+                    await q.exec(async function (err, result){
+                       if(err){
+                           next(err);
+                       } else{
+                           if(result){
+                               let obj = {total: value, url: dict.url, timestamp: dict.timestamp};
+                               await TFdict.updateOne({_id: result._id},{$inc: {total: value},
+                                   $push: {occurrences: obj}}).exec(function(err, upres){
+                                   if(err){
+                                       next(err);
+                                   } else{
+                                       success &= upres.acknowledged;
+                                   }
+                               });
+                           } else{
+                               let occ = [{total: value, url: dict.url, timestamp: dict.timestamp}];
+                               let obj = {identifier: ident, word: key, occurrences: occ, total: value.total};
+                               await TFdict.create(obj, function(err, createRes){
+                                   if(err){
+                                       next(err);
+                                   } else{
+                                       success &= createRes;
+                                   }
+                               });
+                           }
+                       }
+                    });
+                }
+                if(success){
+                    res.status(200);
+                    res.send(`Updated TFdict for ${ident}`);
+                }else{
+                    res.status(500);
+                    res.send(`An error occurred during upding of TFdict for ${ident}`);
+                }
+            }else{
+                res.status(404);
+                res.send(`Coin ${ident} not found`);
             }
         }
     });
 });
 
-router.get('/tfdict/:identifier', async function(req, res, next){
+router.get('/tfdict/:identifier/:length?', async function(req, res, next){
     const ident = req.params['identifier'].toUpperCase();
-    let q = TFdict.findOne({identifier: ident});
+    const length = req.query.length || 100;
+    let q = TFdict.find({identifier: ident}).sort("-total").limit(length);
     await q.exec(function (err, result){
        if(err){
            next(err);
        } else{
            if(result){
                res.status(200);
-               res.send(result.TFdict);
+               res.send(result);
            }else{
                res.status(404);
                res.send(`TFdict for ${ident} not found`);

@@ -2,7 +2,9 @@ let mongoose = require('mongoose');
 
 const tfdictSchema = new mongoose.Schema({
     identifier: {type: String},
-    TFdict: {type: Object}
+    word: {type: String},
+    total: {type: Number},
+    occurrences: {type: Array}
 });
 
-module.exports.TFdict = mongoose.model('TFdict',tfdictSchema)
+module.exports.TFdict = mongoose.model('TFdict',tfdictSchema);
