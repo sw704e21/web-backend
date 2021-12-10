@@ -25,6 +25,7 @@ router.get('/all/:length?:sortParam?', async function (req, res, next) {
     let sortParam = req.query.sortParam; // put a minus in front if sort by descending
     let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
     let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
+    let twohour = new Date(Date.now() - 1000 * 60 * 60 * 2 );
     let q = Sentiment.aggregate()
         .match({timestamp: {$gte: twoday}})
         .unwind('$identifiers')
@@ -133,7 +134,7 @@ router.get('/all/:length?:sortParam?', async function (req, res, next) {
                 if(err){
                     next(err);
                 }else{
-                    let s = Score.find().sort("-timestamp");
+                    let s = Score.find({timestamp: {$gte: twohour}}).sort("-timestamp");
                     await s.exec(async function(err, scoreResult){
                         if(err){
                             next(err)
