@@ -66,7 +66,7 @@ router.post('/tfdict/:identifier', async function(req, res, next){
                                });
                            } else{
                                let occ = [{total: value, url: dict.url, timestamp: dict.timestamp}];
-                               let obj = {identifier: ident, word: key, occurrences: occ, total: value.total};
+                               let obj = {identifier: ident, word: key, total: value.total, occurrences: occ};
                                await TFdict.create(obj, function(err, createRes){
                                    if(err){
                                        next(err);
