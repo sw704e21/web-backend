@@ -22,7 +22,7 @@ router.get('/all/names', async function(req, res, next){
 });
 
 router.get('/all/:length?:sortParam?', async function (req, res, next) {
-    let sortParam = req.query.sortParam; // put a minus in front if sort by descending
+    let sortParam = req.query.sortParam || "-mentions"; // put a minus in front if sort by descending
     let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
     let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
     let twohour = new Date(Date.now() - 1000 * 60 * 60 * 2 );
@@ -123,7 +123,6 @@ router.get('/all/:length?:sortParam?', async function (req, res, next) {
                 ]},
             mostInfluence: 1
         })
-        .sort(sortParam || "-mentions")
     // Add display names, icons and price
     await q.exec(async function (err, result) {
         if (err) {
@@ -152,16 +151,17 @@ router.get('/all/:length?:sortParam?', async function (req, res, next) {
                                     obj['social_score'] = scoreobj['social_score']
                                     obj['average_sentiment'] = scoreobj['average_sentiment']
                                     obj['correlation_rank'] = scoreobj['correlation_rank']
-                                    obj['final_score'] = scoreobj['final_score']
+                                    obj['final_score'] = parseFloat(scoreobj['final_score'])
                                     send.push(obj);
                                 }
                             });
-                            if(sortParam === "final_score"){
-                                send.sort((a,b)=> { return a['final_score'] > b['final_score'] ? 1 : ['final_score'] > a['final_score'] ? -1: 0});
-                            }else if(sortParam === "-final_score"){
-                                send.sort((a,b)=> { return a['final_score'] < b['final_score'] ? 1 : b['final_score'] < a['final_score'] ? -1: 0});
+                            if(sortParam.startsWith('-')){
+                                sortParam = sortParam.substr(1)
+                                send.sort((a,b)=> { return a[sortParam] < b[sortParam] ? 1 : b[sortParam] < a[sortParam] ? -1: 0})
+                            }else{
+                                send.sort((a,b)=> { return a[sortParam] < b[sortParam] ? -1 : b[sortParam] < a[sortParam] ? 1: 0});
                             }
-                            send.slice(0, parseInt(req.query.length) || 25)
+                            send = send.slice(0, parseInt(req.query.length) || 25)
                             res.send(send);
                         }
                     });
