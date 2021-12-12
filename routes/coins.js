@@ -139,6 +139,7 @@ router.get('/all/:length?:sortParam?', async function (req, res, next) {
                             next(err)
                         }
                         else{
+                            let success = true;
                             let send = []
                             result.forEach((obj) => {
                                 let namobj = nameres.find((i) => { return i['identifier'] === obj['identifier']});
@@ -154,15 +155,28 @@ router.get('/all/:length?:sortParam?', async function (req, res, next) {
                                     obj['final_score'] = parseFloat(scoreobj['final_score'])
                                     send.push(obj);
                                 }
+                                else{
+                                    success = false;
+                                }
                             });
-                            if(sortParam.startsWith('-')){
-                                sortParam = sortParam.substr(1)
-                                send.sort((a,b)=> { return a[sortParam] < b[sortParam] ? 1 : b[sortParam] < a[sortParam] ? -1: 0})
+                            if(success) {
+                                if (sortParam.startsWith('-')) {
+                                    sortParam = sortParam.substr(1)
+                                    send.sort((a, b) => {
+                                        return a[sortParam] < b[sortParam] ? 1 : b[sortParam] < a[sortParam] ? -1 : 0
+                                    })
+                                } else {
+                                    send.sort((a, b) => {
+                                        return a[sortParam] < b[sortParam] ? -1 : b[sortParam] < a[sortParam] ? 1 : 0
+                                    });
+                                }
+                                send = send.slice(0, parseInt(req.query.length) || 25)
+                                res.status(200);
+                                res.send(send);
                             }else{
-                                send.sort((a,b)=> { return a[sortParam] < b[sortParam] ? -1 : b[sortParam] < a[sortParam] ? 1: 0});
+                                res.status(500);
+                                res.send("An unknown error occurred");
                             }
-                            send = send.slice(0, parseInt(req.query.length) || 25)
-                            res.send(send);
                         }
                     });
                 }
