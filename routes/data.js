@@ -99,17 +99,14 @@ router.get('/tfdict/:identifier/:length?', async function(req, res, next){
     });
 });
 
-router.get('/urls/:identifier/:word/:source?:length?', async function(req, res, next){
+router.get('/urls/:identifier/:word/:length?', async function(req, res, next){
     const length = parseInt(req.query.length) || 25;
-    const ident = req.params.identifier;
-    const w = req.params.word;
-    let source = req.query.source || 'reddit';
-    if (source !== 'reddit' && source !== 'twitter'){
-        source = 'reddit';
-    }
+    const ident = req.params.identifier.toUpperCase();
+    const w = req.params.word.toUpperCase();
     let q = TFdict.aggregate()
-        .match({identifier: ident, word: w, url: {$text: {source}}})
+        .match({identifier: ident, word: w})
         .group({
+
             _id: "$word",
             urls: {$addToSet: "$url"}
         });
@@ -117,9 +114,10 @@ router.get('/urls/:identifier/:word/:source?:length?', async function(req, res, 
         if(err){
             next(err);
         }else{
-            result.urls = result.urls.slice(0,length);
+            let send = result[0];
+            send.urls = send.urls.slice(0,length);
             res.status(200);
-            res.send(result);
+            res.send(send);
         }
     })
 })
