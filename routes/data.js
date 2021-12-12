@@ -47,44 +47,24 @@ router.post('/tfdict/:identifier', async function(req, res, next){
             next(err);
         } else {
             if(result){
-                let success = true;
+                let create = [];
                 for(const [key, value] of Object.entries(dict.words)){
-                    let q = TFdict.findOne({identifier: ident, word: key});
-                    await q.exec(async function (err, result){
-                       if(err){
-                           next(err);
-                       } else{
-                           if(result){
-                               let obj = {total: value, url: dict.url, timestamp: dict.timestamp};
-                               await TFdict.updateOne({_id: result._id},{$inc: {total: value},
-                                   $push: {occurrences: obj}}).exec(function(err, upres){
-                                   if(err){
-                                       next(err);
-                                   } else{
-                                       success &= upres.acknowledged;
-                                   }
-                               });
-                           } else{
-                               let occ = [{total: value, url: dict.url, timestamp: dict.timestamp}];
-                               let obj = {identifier: ident, word: key, total: value.total, occurrences: occ};
-                               await TFdict.create(obj, function(err, createRes){
-                                   if(err){
-                                       next(err);
-                                   } else{
-                                       success &= createRes;
-                                   }
-                               });
-                           }
-                       }
+                    create.push({
+                        identifier: ident,
+                        timestamp: dict.timestamp,
+                        word: key,
+                        total: value,
+                        url: dict.url
                     });
                 }
-                if(success){
-                    res.status(200);
-                    res.send(`Updated TFdict for ${ident}`);
-                }else{
-                    res.status(500);
-                    res.send(`An error occurred during upding of TFdict for ${ident}`);
-                }
+                await TFdict.insertMany(create, function(err, result){
+                    if(err){
+                        next(err);
+                    }else{
+                        res.status(200);
+                        res.send(`Updated TFdict for ${ident}`);
+                    }
+                });
             }else{
                 res.status(404);
                 res.send(`Coin ${ident} not found`);
@@ -95,8 +75,15 @@ router.post('/tfdict/:identifier', async function(req, res, next){
 
 router.get('/tfdict/:identifier/:length?', async function(req, res, next){
     const ident = req.params['identifier'].toUpperCase();
-    const length = req.query.length || 100;
-    let q = TFdict.find({identifier: ident}).sort("-total").limit(length);
+    const length = parseInt( req.query.length) || 100;
+    let q = TFdict.aggregate()
+        .match({identifier: ident})
+        .group({
+            _id: "$word",
+            total: {$sum: "$total"}
+        })
+        .sort("-total")
+        .limit(length);
     await q.exec(function (err, result){
        if(err){
            next(err);
