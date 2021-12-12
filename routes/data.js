@@ -99,4 +99,29 @@ router.get('/tfdict/:identifier/:length?', async function(req, res, next){
     });
 });
 
+router.get('/urls/:identifier/:word/:source?:length?', async function(req, res, next){
+    const length = parseInt(req.query.length) || 25;
+    const ident = req.params.identifier;
+    const w = req.params.word;
+    let source = req.query.source || 'reddit';
+    if (source !== 'reddit' && source !== 'twitter'){
+        source = 'reddit';
+    }
+    let q = TFdict.aggregate()
+        .match({identifier: ident, word: w, url: {$text: {source}}})
+        .group({
+            _id: "$word",
+            urls: {$addToSet: "$url"}
+        });
+    await q.exec(function (err, result){
+        if(err){
+            next(err);
+        }else{
+            result.urls = result.urls.slice(0,length);
+            res.status(200);
+            res.send(result);
+        }
+    })
+})
+
 module.exports = router;
