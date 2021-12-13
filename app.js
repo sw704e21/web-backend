@@ -9,7 +9,7 @@ const cors = require('cors');
 
 const indexRouter = require('./routes/index');
 const coinsRouter = require('./routes/coins');
-const testsRouter = require('./routes/test');
+const testsRouter = require('./routes/dev');
 const dataRouter = require('./routes/data');
 const trackRouter = require('./routes/track');
 const priceRouter = require('./routes/price');
