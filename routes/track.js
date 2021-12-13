@@ -23,11 +23,9 @@ router.get('/', async function (req, res, next) {
 
 router.post('/', async function(req, res, next){
     let body = req.body;
-    let name = body['name'].toLowerCase();
-    body['name'] = name;
     let identifier = body['identifier'].toUpperCase();
     body['identifier'] = identifier;
-    let q = Coin.find({$or: [{name: name}, {identifier: identifier}]});
+    let q = Coin.find( {identifier: identifier});
     await q.exec(async function (err, result) {
         if (err) {
             res.status(500)

@@ -4,23 +4,6 @@ let {Sentiment} = require('../models/Sentiment');
 let {Coin} = require('../models/Coin');
 let {Score} = require('../models/Score')
 
-
-router.get('/all/names', async function(req, res, next){
-    let q = Coin.find();
-    await q.exec(function(err, result){
-        if(err){
-            next(err);
-        }else{
-            let names = [];
-            result.forEach((obj) => {
-                names.push(obj['name']);
-            })
-            res.status(200);
-            res.send(names);
-        }
-    });
-});
-
 router.get('/all/:length?:sortParam?', async function (req, res, next) {
     let sortParam = req.query.sortParam || "-mentions"; // put a minus in front if sort by descending
     let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
