@@ -4,6 +4,7 @@ let {Sentiment} = require('../models/Sentiment');
 let {TFdict} = require('../models/tf-dict');
 const {Coin} = require('../models/Coin');
 const {Kafka} = require('kafkajs');
+const arrayShuffle = require("array-shuffle");
 const server = "104.41.213.247:9092";
 const topic = "PostsToProcess";
 
@@ -40,7 +41,7 @@ router.post('/', async function (req, res, next) {
 router.post('/tfdict/:identifier', async function(req, res, next){
     let dict = req.body;
     console.log(dict)
-    let ident = req.params['identifier'];
+    let ident = req.params['identifier'].toUpperCase();
     let r = Coin.findOne({identifier: ident});
     await r.exec(async function (err, result) {
         if (err) {
@@ -115,9 +116,32 @@ router.get('/urls/:identifier/:word/:length?', async function(req, res, next){
             next(err);
         }else{
             let send = result[0];
+            send.urls = arrayShuffle(send.urls);
             send.urls = send.urls.slice(0,length);
             res.status(200);
             res.send(send);
+        }
+    })
+})
+
+router.delete('/tfdict', async function(req, res, next){
+    let expire = new Date(Date.now() - 1000 * 60 * 60 * 12); // subtract 8 hours
+    /*let q = TFdict.find({timestamp: {$lte: expire}});
+    await q.exec(function(err, result){
+        res.send(result);
+    })*/
+    let q = TFdict.deleteMany({timestamp: {$lte: expire}});
+    await q.exec(function(err, result){
+        if(err){
+            next(err);
+        }else{
+            if(result){
+                res.status(200);
+                res.send(`Successfully deleted ${result.deletedCount} objects`);
+            }else{
+                res.status(500);
+                res.send(`An unknown error occurred while trying to delete`);
+            }
         }
     })
 })
