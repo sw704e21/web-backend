@@ -3,9 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node ./bin/www",
+    "test": "jest"
   },
   "dependencies": {
+    "array-shuffle": "~2.0.0",
     "body-parser": "^1.19.0",
     "cookie-parser": "~1.4.4",
     "cors": "^2.8.5",
@@ -17,5 +19,8 @@
     "kafkajs": "^1.15.0",
     "mongoose": "^6.0.11",
     "morgan": "~1.9.1"
+  },
+  "devDependencies": {
+    "jest": "^27.4.4"
   }
 }

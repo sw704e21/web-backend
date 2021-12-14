@@ -9,7 +9,7 @@ const cors = require('cors');
 
 const indexRouter = require('./routes/index');
 const coinsRouter = require('./routes/coins');
-const testsRouter = require('./routes/test');
+const testsRouter = require('./routes/dev');
 const dataRouter = require('./routes/data');
 const trackRouter = require('./routes/track');
 const priceRouter = require('./routes/price');
@@ -66,10 +66,10 @@ app.use(function(err, req, res) {
 });
 
 const user = "admin"
-const password = "SW704E21svr!"
+const password = "SW704E21srv!"
 const database = "CryptopinionDB"
-const org = "cryptopinion"
-const uri = `mongodb+srv://${user}:${password}@${org}.djmof.mongodb.net/${database}?retryWrites=true&w=majority`;
+const org = "cryptodb"
+const uri = `mongodb://${user}:${password}@cryptodb.northeurope.cloudapp.azure.com:27017/${database}?retryWrites=true&w=majority`;
 
 mongoose.connect(uri,
     {
