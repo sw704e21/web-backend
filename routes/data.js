@@ -40,7 +40,6 @@ router.post('/', async function (req, res, next) {
 
 router.post('/tfdict/:identifier', async function(req, res, next){
     let dict = req.body;
-    console.log(dict)
     let ident = req.params['identifier'].toUpperCase();
     let r = Coin.findOne({identifier: ident});
     await r.exec(async function (err, result) {
