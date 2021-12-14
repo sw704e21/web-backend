@@ -9,6 +9,7 @@ router.get('/all/:length?:sortParam?', async function (req, res, next) {
     let twoday = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2); // subtract two day
     let oneday = new Date(Date.now() - 1000 * 60 * 60 * 24 ); // subtract one day
     let twohour = new Date(Date.now() - 1000 * 60 * 60 * 2 );
+    console.log(sortParam)
     let q = Sentiment.aggregate()
         .match({timestamp: {$gte: twoday}})
         .unwind('$identifiers')
@@ -142,6 +143,7 @@ router.get('/all/:length?:sortParam?', async function (req, res, next) {
                                     success = false;
                                 }
                             });
+                            console.log(send[0])
                             if(success) {
                                 if (sortParam.startsWith('-')) {
                                     sortParam = sortParam.substr(1)

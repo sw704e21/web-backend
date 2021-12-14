@@ -61,8 +61,12 @@ router.post('/tfdict/:identifier', async function(req, res, next){
                     if(err){
                         next(err);
                     }else{
-                        res.status(200);
-                        res.send(`Updated TFdict for ${ident}`);
+                        if(result) {
+                            res.status(200);
+                            res.send(`Updated TFdict for ${ident}`);
+                        }else{
+                            res.status(500);
+                        }
                     }
                 });
             }else{
@@ -124,7 +128,7 @@ router.get('/urls/:identifier/:word/:length?', async function(req, res, next){
 })
 
 router.delete('/tfdict', async function(req, res, next){
-    let expire = new Date(Date.now() - 1000 * 60 * 60 * 12); // subtract 8 hours
+    let expire = new Date(Date.now() - 1000 * 60 * 60 * 12); // subtract 12 hours
     /*let q = TFdict.find({timestamp: {$lte: expire}});
     await q.exec(function(err, result){
         res.send(result);
