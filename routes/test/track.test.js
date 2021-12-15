@@ -1,68 +1,62 @@
-const {MongoClient} = require('mongodb');
 const request = require('supertest');
 const app = require('../../app');
+const {Coin} = require('../../models/Coin');
 
 describe('/track', () => {
     let connection;
     let db;
 
     beforeAll(async () => {
-
-        connection = await MongoClient.connect(global.__MONGO_URI__, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
+        connection = app.db;
+        await connection.once("open", function () {
+            console.log("Connected successfully!");
         });
-        db = await connection.db();
+        db = connection.db;
 
     });
 
     afterAll(async () => {
         await connection.close();
+
     });
 
     beforeEach(async () => {
-        await db.collection('coins').deleteMany({});
+        await Coin.deleteMany({});
     });
 
     describe('GET', () =>{
         it('should return 1 coin', async () => {
-            const coins = db.collection('coins');
             const mockCoin = {identifier: "TEST",
                 display_name: "TestCoin",
                 icon: "testurl",
                 tags: ["TEST", "TestCoin"]
             }
 
-            await coins.insertOne(mockCoin);
+            const insertedCoin = await Coin.create(mockCoin);
 
-            const insertedCoin = await coins.findOne({identifier: "TEST"});
-            expect(insertedCoin).toEqual(mockCoin);
+            expect(insertedCoin._doc).toMatchObject(mockCoin);
 
             const res = await request(app).get('/track').expect(200);
             expect(res.body.length).toBe(1);
             let recievedCoin = res.body[0];
             delete insertedCoin._id
-            expect(recievedCoin).toMatchObject(insertedCoin);
+            expect(recievedCoin).toMatchObject(insertedCoin._doc);
         });
 
         it('should return many', async ()=> {
-            const coins = db.collection('coins');
             const mockCoins = [{
-                _id: 1,
                 identifier: "TEST",
                 display_name: "TestCoin",
                 icon: "testurl",
                 price: 1,
                 tags: ["TEST", "TestCoin"]
             },{
-                _id: 2,
                 identifier: "SOME",
                 display_name: "SomeCoin",
                 icon: "someurl",
                 price: 2,
                 tags: ["SOME", "SomeCoin"]
             },{
-                _id: 3,
                 identifier: "ST",
                 display_name: "SomeTest",
                 icon: "sometesturl",
@@ -70,7 +64,7 @@ describe('/track', () => {
                 tags: ["ST", "SomeTest"]
             }];
 
-            await coins.insertMany(mockCoins);
+            await Coin.insertMany(mockCoins);
             const res = await request(app).get('/track').expect(200);
             expect(res.body.length).toBe(3);
             expect(res.body[0].identifier).toBe("TEST");
@@ -80,23 +74,19 @@ describe('/track', () => {
         })
 
         it('can get all tags', async ()=>{
-            const coins = db.collection('coins');
             const mockCoins = [{
-                _id: 1,
                 identifier: "TEST",
                 display_name: "TestCoin",
                 icon: "testurl",
                 price: 1,
                 tags: ["TEST", "TestCoin"]
             },{
-                _id: 2,
                 identifier: "SOME",
                 display_name: "SomeCoin",
                 icon: "someurl",
                 price: 2,
                 tags: ["SOME", "SomeCoin"]
             },{
-                _id: 3,
                 identifier: "ST",
                 display_name: "SomeTest",
                 icon: "sometesturl",
@@ -104,7 +94,7 @@ describe('/track', () => {
                 tags: ["ST", "SomeTest"]
             }];
 
-            await coins.insertMany(mockCoins);
+            await Coin.insertMany(mockCoins);
 
             let req = await request(app).get('/track/tags').expect(200);
             const expectList = ['TEST', 'TestCoin', 'SOME', 'SomeCoin', "ST", "SomeTest"];
@@ -120,7 +110,6 @@ describe('/track', () => {
 
     describe('POST', () => {
         it('inserted correcly', async () => {
-            const coins = db.collection('coins');
             const mockCoin = {identifier: "TEST",
                 display_name: "TestCoin",
                 icon: "testurl",
@@ -128,9 +117,10 @@ describe('/track', () => {
             }
             let res = await request(app).post('/track').send(mockCoin).expect(201)
             expect(res.body.identifier).toBe("TEST");
-            let resultcoin = await coins.findOne({identifier: "TEST"});
-            resultcoin._id = resultcoin._id.toString()
-            expect(resultcoin).toEqual(res.body)
+            let resultcoin = await Coin.findOne({identifier: "TEST"});
+            resultcoin = resultcoin._doc
+            delete resultcoin._id
+            expect(res.body).toMatchObject(resultcoin)
         })
 
         it('icon is fetched', async ()=>{
@@ -145,13 +135,12 @@ describe('/track', () => {
         })
 
         it('reject if identifier already exist', async ()=>{
-            const coins = db.collection('coins');
             const mockCoin = {identifier: "TEST",
                 display_name: "TestCoin",
                 icon: "testurl",
                 tags: ["TEST", "TestCoin"]
             }
-            await coins.insertOne(mockCoin);
+            await Coin.create(mockCoin);
             await request(app).post('/track').send(mockCoin).expect(409)
         })
 
@@ -168,23 +157,21 @@ describe('/track', () => {
 
     describe('PUT', ()=>{
         it('updates icon', async ()=>{
-            const coins = db.collection('coins');
             const mockCoin = {
                 identifier: "TEST",
                 display_name: "TestCoin",
                 icon: "testurl",
                 tags: ["TEST", "TestCoin"]
             }
-            await coins.insertOne(mockCoin);
-            let resultcoin = await coins.findOne({identifier: "TEST"});
+            await Coin.create(mockCoin);
+            let resultcoin = await Coin.findOne({identifier: "TEST"});
             await request(app).put(`/track/${resultcoin._id}`).send(mockCoin).expect(200);
-            let newresult = await coins.findOne({identifier: "TEST"});
+            let newresult = await Coin.findOne({identifier: "TEST"});
             expect(newresult).not.toEqual(resultcoin);
             expect(newresult.icon).toEqual("https://lcw.nyc3.cdn.digitaloceanspaces.com/production/currencies/32/test.webp");
         })
 
         it('update body', async()=>{
-            const coins = db.collection('coins');
             const mockCoin = {
                 identifier: "TEST",
                 display_name: "TestCoin",
@@ -197,30 +184,29 @@ describe('/track', () => {
                 icon: "https://lcw.nyc3.cdn.digitaloceanspaces.com/production/currencies/32/some.webp",
                 tags: ["SOME", "SomeCoin"]
             }
-            await coins.insertOne(mockCoin);
-            let resultcoin = await coins.findOne({identifier: "TEST"});
+            await Coin.create(mockCoin);
+            let resultcoin = await Coin.findOne({identifier: "TEST"});
             await request(app).put(`/track/${resultcoin._id}`).send(otherCoin).expect(200);
-            let newresult = await coins.findOne({identifier: "SOME"});
-            expect(resultcoin).toEqual(mockCoin);
-            expect(newresult).not.toEqual(resultcoin);
+            let newresult = await Coin.findOne({identifier: "SOME"});
+            expect(resultcoin).toMatchObject(mockCoin);
+            expect(newresult).not.toMatchObject(resultcoin);
             expect(newresult).toMatchObject(otherCoin)
         })
     })
 
     describe('DELETE', ()=>{
         it('successful delete', async ()=>{
-            const coins = db.collection('coins');
             const mockCoin = {identifier: "TEST",
                 display_name: "TestCoin",
                 icon: "testurl",
                 tags: ["TEST", "TestCoin"]
             }
 
-            await coins.insertOne(mockCoin);
+            await Coin.create(mockCoin);
 
-            const insertedCoin = await coins.findOne({identifier: "TEST"});
+            const insertedCoin = await Coin.findOne({identifier: "TEST"});
             await request(app).delete(`/track/${insertedCoin._id}`).expect(200);
-            const deleteCoin = await coins.findOne({identifier: "TEST"});
+            const deleteCoin = await Coin.findOne({identifier: "TEST"});
             expect(deleteCoin).toBeNull();
         })
 
