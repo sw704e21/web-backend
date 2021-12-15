@@ -16,12 +16,12 @@ describe('/track', () => {
     });
 
     afterAll(async () => {
+        await Coin.deleteMany({}).exec();
         await connection.close();
-
     });
 
     beforeEach(async () => {
-        await Coin.deleteMany({});
+        return await Coin.deleteMany({}).exec();
     });
 
     describe('GET', () =>{
@@ -29,6 +29,7 @@ describe('/track', () => {
             const mockCoin = {identifier: "TEST",
                 display_name: "TestCoin",
                 icon: "testurl",
+                price: 1,
                 tags: ["TEST", "TestCoin"]
             }
 
@@ -67,13 +68,11 @@ describe('/track', () => {
             await Coin.insertMany(mockCoins);
             const res = await request(app).get('/track').expect(200);
             expect(res.body.length).toBe(3);
-            expect(res.body[0].identifier).toBe("TEST");
-            expect(res.body[1].identifier).toBe("SOME");
-            expect(res.body[2].identifier).toBe("ST");
+            expect(res.body).toMatchObject(mockCoins)
 
         })
 
-        it('can get all tags', async ()=>{
+        it('/tags can get all tags', async ()=>{
             const mockCoins = [{
                 identifier: "TEST",
                 display_name: "TestCoin",
@@ -112,7 +111,6 @@ describe('/track', () => {
         it('inserted correcly', async () => {
             const mockCoin = {identifier: "TEST",
                 display_name: "TestCoin",
-                icon: "testurl",
                 tags: ["TEST", "TestCoin"]
             }
             let res = await request(app).post('/track').send(mockCoin).expect(201)
