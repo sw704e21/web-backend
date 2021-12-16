@@ -6,7 +6,8 @@ module.exports = async () => {
             "/node_modules/",
             "/routes/dev.js",
             "/models/",
-            "/app.js"
+            "/app.js",
+            "/routes/index.js"
         ]
     };
 };

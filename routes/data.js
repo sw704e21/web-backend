@@ -6,7 +6,10 @@ const {Coin} = require('../models/Coin');
 const {Kafka} = require('kafkajs');
 const arrayShuffle = require("array-shuffle");
 const server = "104.41.213.247:9092";
-const topic = "PostsToProcess";
+let topic = "CoinsToTrack";
+if(process.env.NODE_ENV === 'test'){
+    topic = "testtopic";
+}
 
 router.post('/', async function (req, res, next) {
     const body = req.body;
@@ -62,7 +65,7 @@ router.post('/tfdict/:identifier', async function(req, res, next){
                         next(err);
                     }else{
                         if(result) {
-                            res.status(200);
+                            res.status(201);
                             res.send(`Updated TFdict for ${ident}`);
                         }else{
                             res.status(500);
@@ -79,28 +82,35 @@ router.post('/tfdict/:identifier', async function(req, res, next){
 
 router.get('/tfdict/:identifier/:length?', async function(req, res, next){
     const ident = req.params['identifier'].toUpperCase();
-    const length = parseInt( req.query.length) || 100;
-    let q = TFdict.aggregate()
-        .match({identifier: ident})
-        .group({
-            _id: "$word",
-            total: {$sum: "$total"}
-        })
-        .sort("-total")
-        .limit(length);
-    await q.exec(function (err, result){
-       if(err){
-           next(err);
-       } else{
-           if(result){
-               res.status(200);
-               res.send(result);
-           }else{
-               res.status(404);
-               res.send(`TFdict for ${ident} not found`);
-           }
-       }
-    });
+    const coin = await Coin.findOne({identifier: ident}).exec();
+    if(!coin){
+        res.status(404);
+        res.send(`coin with identifier ${ident} not found`);
+    }
+    else {
+        const length = parseInt(req.query.length) || 100;
+        let q = TFdict.aggregate()
+            .match({identifier: ident})
+            .group({
+                _id: "$word",
+                total: {$sum: "$total"}
+            })
+            .sort("-total")
+            .limit(length);
+        await q.exec(function (err, result) {
+            if (err) {
+                next(err);
+            } else {
+                if (result.length > 0) {
+                    res.status(200);
+                    res.send(result);
+                } else {
+                    res.status(404);
+                    res.send(`TFdict for ${ident} not found`);
+                }
+            }
+        });
+    }
 });
 
 router.get('/urls/:identifier/:word/:length?', async function(req, res, next){
@@ -118,21 +128,23 @@ router.get('/urls/:identifier/:word/:length?', async function(req, res, next){
         if(err){
             next(err);
         }else{
-            let send = result[0];
-            send.urls = arrayShuffle(send.urls);
-            send.urls = send.urls.slice(0,length);
-            res.status(200);
-            res.send(send);
+            if(result && result[0] && result[0].urls.length > 0) {
+                let send = result[0];
+                send.urls = arrayShuffle(send.urls);
+                send.urls = send.urls.slice(0, length);
+                res.status(200);
+                res.send(send);
+            }else{
+                res.status(404);
+                res.send(`${w} not found for coin ${ident}`)
+            }
         }
     })
 })
 
 router.delete('/tfdict', async function(req, res, next){
     let expire = new Date(Date.now() - 1000 * 60 * 60 * 12); // subtract 12 hours
-    /*let q = TFdict.find({timestamp: {$lte: expire}});
-    await q.exec(function(err, result){
-        res.send(result);
-    })*/
+
     let q = TFdict.deleteMany({timestamp: {$lte: expire}});
     await q.exec(function(err, result){
         if(err){
