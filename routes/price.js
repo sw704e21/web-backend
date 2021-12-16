@@ -15,7 +15,6 @@ router.get('/', async function(req, res, next){
     });
 });
 
-
 router.post('/', async function(req, res, next){
     let body = req.body;
     let q = Coin.findOne({identifier: body['identifier']});
