@@ -6,7 +6,7 @@ const {Coin} = require('../models/Coin');
 const {Kafka} = require('kafkajs');
 const arrayShuffle = require("array-shuffle");
 const server = "104.41.213.247:9092";
-let topic = "CoinsToTrack";
+let topic = "PostsToProcess";
 if(process.env.NODE_ENV === 'test'){
     topic = "testtopic";
 }
