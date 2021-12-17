@@ -15,7 +15,6 @@ router.get('/', async function(req, res, next){
     });
 });
 
-
 router.post('/', async function(req, res, next){
     let body = req.body;
     let q = Coin.findOne({identifier: body['identifier']});
@@ -75,14 +74,21 @@ router.post('/', async function(req, res, next){
 });
 
 router.patch('/:identifier/:price', async function(req, res, next) {
-    let q = Coin.updateOne({identifier: req.params['identifier']}, {price: req.params['price']});
+    const ident = req.params['identifier'].toUpperCase();
+    const price = parseFloat(req.params['price']);
+    let q = Coin.updateOne({identifier: ident}, {price: price});
     await q.exec(function(err, result){
         if(err) {
             next(err);
         } else{
             if(result.acknowledged){
-                res.status(200);
-                res.send(`Price of ${req.params['identifier']} updated to ${req.params['price']}`);
+                if(result.modifiedCount === 0){
+                    res.status(404);
+                    res.send(`Coin with identifier ${ident} not found`);
+                }else{
+                    res.status(200);
+                    res.send(`Price of ${ident} updated to ${price}`);
+                }
             }
             else{
                 res.status(500);

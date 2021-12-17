@@ -5,7 +5,10 @@ const apikey = "dfb9d16f-b1ed-41cc-ab52-1a2384dfd566";
 const https = require('https');
 const {Kafka} = require('kafkajs');
 const server = "104.41.213.247:9092";
-const topic = "CoinsToTrack";
+let topic = "CoinsToTrack";
+if(process.env.NODE_ENV === 'test'){
+    topic = "testtopic";
+}
 
 
 router.get('/', async function (req, res, next) {
@@ -28,7 +31,6 @@ router.post('/', async function(req, res, next){
     let q = Coin.find( {identifier: identifier});
     await q.exec(async function (err, result) {
         if (err) {
-            res.status(500)
             next()
         } else {
             if (result.length !== 0) {
@@ -115,14 +117,23 @@ router.put('/:id', async function(req, res,next) {
             body['icon'] = data['webp32'];
 
             let q = Coin.replaceOne({_id: req.params['id']},body);
-            const result = await q.exec();
-            if (result.acknowledged) {
-                res.status(200);
-                res.send(result.body);
-            }
-            else{
-                next(result.error);
-            }
+            await q.exec(function (err, result){
+                if(err){
+                    next(err);
+                }else{
+                    if (result.acknowledged) {
+                        res.status(200);
+                        res.send(`Successfully updates ${body.identifier}`);
+                    }
+                    else{
+                        res.status(500);
+                        res.send(`An error occurred while trying to update ${body.identifier}`)
+                    }
+                }
+
+
+            });
+
 
         });
     });
@@ -135,7 +146,7 @@ router.put('/:id', async function(req, res,next) {
     request.end();
 
 
-})
+});
 
 router.delete('/:id', async function (req, res, next) {
     const id = req.params['id'];
@@ -197,6 +208,5 @@ router.get('/tags', async function(req, res, next){
        }
     });
 })
-
 
 module.exports = router;

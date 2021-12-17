@@ -6,7 +6,6 @@ const logger = require('morgan');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-
 const indexRouter = require('./routes/index');
 const coinsRouter = require('./routes/coins');
 const testsRouter = require('./routes/dev');
@@ -69,7 +68,11 @@ const user = "admin"
 const password = "SW704E21srv!"
 const database = "CryptopinionDB"
 const org = "cryptodb"
-const uri = `mongodb://${user}:${password}@cryptodb.northeurope.cloudapp.azure.com:27017/${database}?retryWrites=true&w=majority`;
+let uri = `mongodb://${user}:${password}@${org}.northeurope.cloudapp.azure.com:27017/${database}?retryWrites=true&w=majority`;
+
+if(process.env.NODE_ENV === 'test'){
+    uri = global.__MONGO_URI__;
+}
 
 mongoose.connect(uri,
     {
@@ -84,11 +87,12 @@ db.once("open", function () {
 });
 
 
-
 //Listen on port 3000
-app.listen(3001, () => {
-  console.log("Server is running on port 3000");
-});
+if(process.env.NODE_ENV !== 'test') {
+    app.listen(3001, () => {
+        console.log("Server is running on port 3000");
+    });
+}
 
 var dir = __dirname;
 module.exports.serverPath = dir.substr(0, dir.length -'web-backend/'.length) + "/server-backend/"
@@ -99,3 +103,4 @@ module.exports.crawlerPath = dir.substr(0, dir.length -'web-backend/'.length) + 
 module.exports.corsOptions = corsOptions;
 
 module.exports = app;
+module.exports.db = db;

@@ -27,94 +27,118 @@ router.get('/mentions/:identifier',  async function (req, res, next) {
     const now = new Date(Date.now());
     let oneday = new Date(now - 1000 * 60 * 60 * 24); // subtract one day
     const ident = req.params['identifier'].toUpperCase();
-    let q = Sentiment.aggregate()
-        .match({identifiers: {$elemMatch: {$eq: ident}}, timestamp: {$gte: oneday}})
-        .unwind('$identifiers')
-        .match({identifiers: ident})
-        .group({
-            _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
-            mentions: {$sum: 1}
-        })
-        .sort("_id");
-    await q.exec(function(err, result){
-        if(err){
-            next(err);
-        }else{
-            let send = ensure24(result, "mentions");
-            res.status(200);
-            res.send(send);
-        }
-    });
+    const coin = await Coin.findOne({identifier: ident}).exec();
+    if(!coin){
+        res.status(404);
+        res.send(`Coin with identifier ${ident} not found`);
+    }else {
+        let q = Sentiment.aggregate()
+            .match({identifiers: {$elemMatch: {$eq: ident}}, timestamp: {$gte: oneday}})
+            .unwind('$identifiers')
+            .match({identifiers: ident})
+            .group({
+                _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
+                mentions: {$sum: 1}
+            })
+            .sort("_id");
+        await q.exec(function (err, result) {
+            if (err) {
+                next(err);
+            } else {
+                let send = ensure24(result, "mentions");
+                res.status(200);
+                res.send(send);
+            }
+        });
+    }
 });
 
 router.get('/sentiment/:identifier',async function(req, res, next){
     const now = new Date(Date.now());
     let oneday = new Date(now - 1000 * 60 * 60 * 24); // subtract one day
     const ident = req.params['identifier'].toUpperCase();
-    let q = Sentiment.aggregate()
-        .match({identifiers: {$elemMatch: {$eq: ident}}, timestamp: {$gte: oneday}})
-        .unwind('$identifiers')
-        .match({identifiers: ident})
-        .group({
-            _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
-            sentiment: {$avg: "$sentiment"}
-        })
-        .sort("_id");
-    await q.exec(function(err, result){
-        if(err){
-            next(err);
-        }else{
-            let send = ensure24(result,"sentiment");
-            const sum = send.reduce((a, b) => a + b, 0);
-            const avg = (sum / send.length) || 0;
-            res.status(200);
-            res.send({'24hours': avg, 'list': send});
-        }
-    });
+    const coin = await Coin.findOne({identifier: ident}).exec();
+    if(!coin){
+        res.status(404);
+        res.send(`Coin with identifier ${ident} not found`);
+    }else {
+        let q = Sentiment.aggregate()
+            .match({identifiers: {$elemMatch: {$eq: ident}}, timestamp: {$gte: oneday}})
+            .unwind('$identifiers')
+            .match({identifiers: ident})
+            .group({
+                _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
+                sentiment: {$avg: "$sentiment"}
+            })
+            .sort("_id");
+        await q.exec(function (err, result) {
+            if (err) {
+                next(err);
+            } else {
+                let send = ensure24(result, "sentiment");
+                const sum = send.reduce((a, b) => a + b, 0);
+                const avg = (sum / send.length) || 0;
+                res.status(200);
+                res.send({'24hours': avg, 'list': send});
+            }
+        });
+    }
 });
 
 router.get('/interactions/:identifier', async function(req, res, next){
     const now = new Date(Date.now());
     let oneday = new Date(now - 1000 * 60 * 60 * 24); // subtract one day
     const ident = req.params['identifier'].toUpperCase();
-    let q = Sentiment.aggregate()
-        .match({identifiers: {$elemMatch: {$eq: ident}}, timestamp: {$gte: oneday}})
-        .unwind('$identifiers')
-        .match({identifiers: ident})
-        .group({
-            _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
-            interactions: {$sum: "$interaction"}
-        })
-        .sort("_id");
-    await q.exec(function(err, result){
-        if(err){
-            next(err);
-        }else{
-            let send = ensure24(result, "interactions");
-            res.status(200);
-            res.send(send);
-        }
-    });
+    const coin = await Coin.findOne({identifier: ident}).exec();
+    if(!coin){
+        res.status(404);
+        res.send(`Coin with identifier ${ident} not found`);
+    }else {
+        let q = Sentiment.aggregate()
+            .match({identifiers: {$elemMatch: {$eq: ident}}, timestamp: {$gte: oneday}})
+            .unwind('$identifiers')
+            .match({identifiers: ident})
+            .group({
+                _id: {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60]}},
+                interactions: {$sum: "$interaction"}
+            })
+            .sort("_id");
+        await q.exec(function (err, result) {
+            if (err) {
+                next(err);
+            } else {
+                let send = ensure24(result, "interactions");
+                res.status(200);
+                res.send(send);
+            }
+        });
+    }
 });
 
 router.get('/price/:identifier', async function(req, res, next){
-    let q = Price.find({identifier: req.params['identifier'].toUpperCase()});
-    await q.exec(function(err, result) {
-        if(err){
-            next(err);
-        }else{
-            let send = []
-            result.forEach((item) =>{
-                send.push(item['price']);
-            })
-            send.reverse();
-            while(send.length < 24){
-                send.push(0);
+    const ident = req.params['identifier'].toUpperCase();
+    const coin = await Coin.findOne({identifier: ident}).exec();
+    if(!coin){
+        res.status(404);
+        res.send(`Coin with identifier ${ident} not found`);
+    }else {
+        let q = Price.find({identifier: ident}).sort("-timestamp").limit(24);
+        await q.exec(function (err, result) {
+            if (err) {
+                next(err);
+            } else {
+                let send = []
+                result.forEach((item) => {
+                    send.push(item['price']);
+                });
+                while (send.length < 24) {
+                    send.push(0);
+                }
+                res.status(200);
+                res.send(send);
             }
-            res.status(200);
-            res.send(send);
-        }
-    });
+        });
+    }
 });
 
 router.post('/', async function (req, res, next){
@@ -146,7 +170,7 @@ router.post('/', async function (req, res, next){
 })
 
 router.get('/all',async function(req, res, next){
-    let q = Score.find();
+    let q = Score.find({});
     await q.exec(function(err, result){
         if(err){
             next(err)

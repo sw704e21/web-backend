@@ -168,8 +168,8 @@ router.get('/all/:length?:sortParam?', async function (req, res, next) {
     });
 });
 
-router.get('/search/:identifier',  async function(req, res, next){
-    let query = req.params.identifier.toUpperCase();
+router.get('/search/:q',  async function(req, res, next){
+    let query = req.params.q;
     let regex = new RegExp(query, 'i');
     let q = Coin.find()
     .or([{ identifier: regex}, { display_name: regex }])
@@ -305,7 +305,6 @@ router.get('/:identifier/info', async function(req, res, next) {
                             if (err) {
                                 next(err)
                             } else {
-                                console.log(scoreResult)
                                 scoreResult = scoreResult[0]
                                 send['displayName'] = fresult['display_name'];
                                 send['icon'] = fresult['icon'];
@@ -331,99 +330,102 @@ router.get('/:identifier/:age?', async function (req, res, next) {
     let date = new Date(Date.now() - 1000 * 60 * 60 * 24 * age);
     let now = new Date(Date.now());
     const ident = req.params['identifier'].toUpperCase();
-    let q = Sentiment.aggregate()
-        .match({identifiers: {$elemMatch: {$eq: ident}}, timestamp: {$gte: date}})
-        .unwind('$identifiers')
-        .match({identifiers: ident})
-        .group({
-            "_id": {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60 ]}},
-            "mentions": {$sum: 1},
-            "interaction": {$sum: "$interaction"},
-            "sentiment": {$sum: "$sentiment"},
-            "negSentiment": {$sum: {$cond: [{$lt: ['$sentiment', 0]}, '$sentiment', 0]}},
-            "posSentiment": {$sum: {$cond: [{$gt: ['$sentiment', 0]}, '$sentiment', 0]}},
-            "mostInfluence": {$max: "$influence"}
-            }
-        )
-        .project({
-            _id: 0,
-            time: "$_id",
-            mentions: 1,
-            interaction: 1,
-            sentiment: 1,
-            negSentiment: {$abs: "$negSentiment"},
-            posSentiment: 1,
-            mostInfluence: 1
-        })
-        .sort("time")
-    await q.exec(function (err, result) {
-        if (err) {
+    let r = Coin.findOne({identifier: ident});
+    await r.exec(async function(err, result){
+        if(err){
             next(err);
-        }
-        else {
-            if (result.length === 0) {
+        }else{
+            if(result){
+                let q = Sentiment.aggregate()
+                    .match({identifiers: {$elemMatch: {$eq: ident}}, timestamp: {$gte: date}})
+                    .unwind('$identifiers')
+                    .match({identifiers: ident})
+                    .group({
+                            "_id": {$trunc: {$divide: [{$subtract: [now, "$timestamp"]}, 1000 * 60 * 60 ]}},
+                            "mentions": {$sum: 1},
+                            "interaction": {$sum: "$interaction"},
+                            "sentiment": {$sum: "$sentiment"},
+                            "negSentiment": {$sum: {$cond: [{$lt: ['$sentiment', 0]}, '$sentiment', 0]}},
+                            "posSentiment": {$sum: {$cond: [{$gt: ['$sentiment', 0]}, '$sentiment', 0]}},
+                            "mostInfluence": {$max: "$influence"}
+                        }
+                    )
+                    .project({
+                        _id: 0,
+                        time: "$_id",
+                        mentions: 1,
+                        interaction: 1,
+                        sentiment: 1,
+                        negSentiment: {$abs: "$negSentiment"},
+                        posSentiment: 1,
+                        mostInfluence: 1
+                    })
+                    .sort("time")
+                await q.exec(function (err, result) {
+                    if (err) {
+                        next(err);
+                    }
+                    else {
+                        let send = [];
+                        if (result.length < 24 * age){
+                            let i = 0;
+                            let j = 0;
+                            while(i < 24 * age){
+                                let item = result[j];
+                                if(item && item.time === i){
+                                    send.push(item);
+                                    j++;
+                                }else{
+                                    send.push({
+                                        time: i,
+                                        mentions: 0,
+                                        interaction: 0,
+                                        sentiment: 0,
+                                        negSentiment: 0,
+                                        posSentiment: 0,
+                                        mostInfluence: 0
+                                    });
+                                }
+                                i++;
+                            }
+                        }else{
+                            send = result;
+                        }
+                        res.statusCode = 200;
+                        res.send(send);
+                    }
+                })
+            }else{
                 res.status(404);
                 res.send( `${req.params['identifier']} not found!`);
             }
-            else {
-                let send = [];
-                if (result.length < 24 * age){
-                    let i = 0;
-                    let j = 0;
-                    while(i < 24 * age){
-                        let item = result[j];
-                        if(item && item.time === i){
-                            send.push(item);
-                            j++;
-                        }else{
-                            send.push({
-                                time: i,
-                                mentions: 0,
-                                interaction: 0,
-                                sentiment: 0,
-                                negSentiment: 0,
-                                posSentiment: 0,
-                                mostInfluence: 0
-                            });
-                        }
-                        i++;
-                    }
-                }else{
-                    send = result;
-                }
-                res.statusCode = 200;
-                res.send(send);
-            }
         }
     })
+
 });
 
 router.patch('/:uuid?:interactions?',  async function (req, res, next) {
-   let q = Sentiment.updateOne({uuid: req.query.uuid}, {interaction: req.query.interactions});
-   await q.exec(function(err, result) {
-       if (err) {
-           next(err);
-       }else{
-           if(result.matchedCount === 0){
-               res.status(404)
-               res.send(`${req.query.uuid} not found!`)
-           }
-           else if(result.matchedCount < 1){
-               res.status(200)
-               res.send(`${result.matchedCount} documents found, updated only one.`)
-           }
-           else {
-               if(result.acknowledged){
-                   res.status(200)
-                   res.send(`Sentiment of post ${req.query.uuid} updated to ${req.query.interactions}`)
-               }
-               else{
-                   res.status(500)
-                   res.send("An unknown database error occurred")
-               }
-           }
-       }
-   })
+    let s = await Sentiment.findOne({uuid: req.query.uuid}).exec();
+    if(! s){
+        res.status(404)
+        res.send(`${req.query.uuid} not found!`)
+    }else {
+        let q = Sentiment.updateOne({uuid: req.query.uuid}, {interaction: req.query.interactions});
+        await q.exec(function (err, result) {
+            if (err) {
+                next(err);
+            } else {
+                if (result.matchedCount === 1 && result.acknowledged) {
+                    res.status(200)
+                    res.send(`Sentiment of post ${req.query.uuid} updated to ${req.query.interactions}`)
+                } else {
+                    res.status(500)
+                    res.send("An unknown database error occurred")
+                }
+
+            }
+        })
+    }
 });
 
 router.post('/', async function (req, res, next) {
@@ -435,7 +437,6 @@ router.post('/', async function (req, res, next) {
             next(err);
         } else {
             if (result.length === 0) {
-                console.log(`Could not find ${ident}`);
                 res.status(404);
                 res.send('Not tracking coin with identifier ' + ident);
             } else {
