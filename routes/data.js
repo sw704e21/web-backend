@@ -5,7 +5,7 @@ let {TFdict} = require('../models/tf-dict');
 const {Coin} = require('../models/Coin');
 const {Kafka} = require('kafkajs');
 const arrayShuffle = require("array-shuffle");
-const server = "104.41.213.247:9092";
+const server = "13.94.88.221:9092";
 let topic = "PostsToProcess";
 if(process.env.NODE_ENV === 'test'){
     topic = "testtopic";

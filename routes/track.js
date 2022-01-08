@@ -4,7 +4,7 @@ const {Coin} = require("../models/Coin");
 const apikey = "dfb9d16f-b1ed-41cc-ab52-1a2384dfd566";
 const https = require('https');
 const {Kafka} = require('kafkajs');
-const server = "104.41.213.247:9092";
+const server = "13.94.88.221:9092";
 let topic = "CoinsToTrack";
 if(process.env.NODE_ENV === 'test'){
     topic = "testtopic";
