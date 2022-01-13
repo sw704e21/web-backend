@@ -67,8 +67,8 @@ app.use(function(err, req, res) {
 const user = "admin"
 const password = "SW704E21srv!"
 const database = "CryptopinionDB"
-const org = "cryptodb"
-let uri = `mongodb://${user}:${password}@${org}.northeurope.cloudapp.azure.com:27017/${database}?retryWrites=true&w=majority`;
+const org = "mongorouter-cryptopinion"
+let uri = `mongodb://${user}:${password}@${org}.swedencentral.cloudapp.azure.com:27017/${database}?retryWrites=true&w=majority`;
 
 if(process.env.NODE_ENV === 'test'){
     uri = global.__MONGO_URI__;
@@ -77,7 +77,8 @@ if(process.env.NODE_ENV === 'test'){
 mongoose.connect(uri,
     {
       useNewUrlParser: true,
-      useUnifiedTopology: true
+      useUnifiedTopology: true,
+        authSource: "admin"
     });
 
 const db = mongoose.connection;
